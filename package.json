@@ -1,0 +1,12 @@
+{
+  "name": "typescript-experiments",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.0.3"
+  }
+}
