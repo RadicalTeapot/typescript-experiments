@@ -1,6 +1,6 @@
 # typescript-experiments
 
-Collections of single html page experiments using typescript.
+Collections of single html page experiments using typescript and [expressJS](http://expressjs.com/) server.
 
 ## Pages
 
