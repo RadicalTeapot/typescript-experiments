@@ -1,3 +1,6 @@
+// Note: Factory pattern used here is based on this implementation https://blog.fullstacktraining.com/factory-pattern-in-typescript/
+// and also this one https://www.typescriptlang.org/docs/handbook/functions.html#overloads
+
 export enum AssetType {
     IMAGE,
     DATA
