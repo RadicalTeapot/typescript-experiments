@@ -10,6 +10,14 @@ Since transpiled typescript code imports javascript modules using paths without 
 
 ## Pages
 
+### Game
+
+Pages with game related content.
+
+#### simple_platformer
+
+Bare-bones platformer implementation based on [this implementation](https://medium.com/@btco_code/writing-a-platformer-for-the-tic-80-virtual-console-6fa737abe476).
+
 ### Other
 
 Pages with content which doesn't fit in other categories.
