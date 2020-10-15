@@ -1,10 +1,10 @@
 export enum AssetType {
-    IMAGE
+    IMAGE,
+    DATA
 }
+export type AssetItem = [string, string, AssetType];
 
-type AssetTypes = HTMLImageElement;
-
-class Asset<T extends AssetTypes> {
+abstract class Asset<T> {
     path: string;
     assetType: AssetType;
     object: T;
@@ -15,37 +15,60 @@ class Asset<T extends AssetTypes> {
         this.object = object;
     }
 
+    abstract async load(progressCallback?: (message: string) => void): Promise<void>
+}
+
+class ImageAsset extends Asset<HTMLImageElement> {
+    constructor(path: string) {
+        super(path, AssetType.IMAGE, new Image());
+    }
+
     public async load(progressCallback?: (message: string) => void) {
-        switch (this.assetType) {
-            case AssetType.IMAGE:
-                const imageLoader = new Promise<string>((resolve, reject) => {
-                    const o = (this.object as HTMLImageElement);
-                    o.onload = () => resolve(this.path);
-                    o.onerror = () => reject(`Could not load image at ${this.path}`);
-                    o.src = this.path;
-                });
-                try {
-                    const result = await imageLoader;
-                    progressCallback?.(result);
-                } catch (error) {
-                    throw new Error(error);
-                }
+        const imageLoader = new Promise<string>((resolve, reject) => {
+            this.object.onload = () => resolve(this.path);
+            this.object.onerror = () => reject(`Could not load image at ${this.path}`);
+            this.object.src = this.path;
+        });
+        try {
+            const result = await imageLoader;
+            progressCallback?.(result);
+        } catch (error) {
+            throw new Error(error);
         }
     }
 }
 
-function AssetFactory(path: string, assetType: AssetType) {
-    switch (assetType) {
+class DataAsset extends Asset<string> {
+    constructor(path: string) {
+        super(path, AssetType.DATA, "");
+    }
+    public async load(progressCallback?: (message: string) => void) {
+        progressCallback?.("");
+    }
+}
+
+type AssetTypes = ImageAsset | DataAsset;
+function AssetFactory(type: AssetType.IMAGE, path: string): ImageAsset;
+function AssetFactory(type: AssetType.DATA, path: string): DataAsset;
+function AssetFactory(type: AssetType, path: string): AssetTypes;
+function AssetFactory(type: AssetType, path: string) {
+    switch (type) {
         case AssetType.IMAGE:
-            return new Asset(path, assetType, new Image());
+            return new ImageAsset(path);
+        case AssetType.DATA:
+            return new DataAsset(path);
     }
 }
 
 export class AssetLoader {
 
-    constructor(paths: [string, string, AssetType][]) {
+    constructor() {
         this._assets = new Map();
-        paths.forEach(([id, path, assetType]) => this._assets.set(id, AssetFactory(path, assetType)));
+    }
+
+    public setItemsToLoad(...items: AssetItem[]) {
+        this._assets = new Map();
+        items.forEach(([id, path, assetType]) => this._assets.set(id, AssetFactory(assetType, path)));
     }
 
     public async load(doneLoadingCallback?: () => void) {
@@ -64,7 +87,7 @@ export class AssetLoader {
         }
     }
 
-    public getAssetData(id: string) {
+    public get(id: string) {
         if (this._assets.has(id))
             return this._assets.get(id)!.object;
         return null;
@@ -74,5 +97,5 @@ export class AssetLoader {
         console.log(`${Math.floor(100 * index / this._assets.size)} % loaded (${message})`);
     }
 
-    private _assets: Map<string, Asset<AssetTypes>>;
+    private _assets: Map<string, AssetTypes>;
 }
