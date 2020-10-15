@@ -1,16 +1,11 @@
-import { Constructor } from "./ObjectFactory";
+import { GameConstructor } from "./Constructors";
 
 export interface IFixedStepUpdate {
-    update: () => void,
-    render: () => void,
     run: () => void
 };
 
-export const WithFixedStepUpdate = <TBase extends Constructor>(Base: TBase) => {
-    return class extends Base implements IFixedStepUpdate {
-        update = () => { };
-        render = () => { };
-
+export const WithFixedStepUpdate = <TBase extends GameConstructor>(Base: TBase) => {
+    return class HasFixedStep extends Base implements IFixedStepUpdate {
         constructor(...args: any[]) {
             super(...args);
             this._step = 1 / 60;

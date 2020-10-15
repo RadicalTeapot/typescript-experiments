@@ -1,4 +1,4 @@
-import { Constructor } from "./ObjectFactory";
+import { GameConstructor } from "./Constructors";
 
 export interface IKeyboardHandler {
     keys: { up: boolean, right: boolean, left: boolean }
@@ -36,8 +36,8 @@ class KeyboardHandler {
     private _up: boolean;
 }
 
-export const WithKeyboardHandler = <TBase extends Constructor>(Base: TBase) => {
-    return class extends Base implements IKeyboardHandler {
+export const WithKeyboardHandler = <TBase extends GameConstructor>(Base: TBase) => {
+    return class HasKeyboardHandler extends Base implements IKeyboardHandler {
         keys: KeyboardHandler;
 
         constructor(...args: any[]) {
