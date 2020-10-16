@@ -3,7 +3,7 @@
 
 export enum AssetType {
     IMAGE,
-    DATA
+    JSON
 }
 export type AssetItem = [string, string, AssetType];
 
@@ -44,26 +44,46 @@ class ImageAsset extends Asset<HTMLImageElement> {
     }
 }
 
-class DataAsset extends Asset<string> {
+class JsonAsset extends Asset<any> {
     constructor(id: string, path: string) {
-        super(id, path, AssetType.DATA, "");
+        super(id, path, AssetType.JSON, null);
     }
     public async load(progressCallback?: (message: string) => void) {
-        progressCallback?.("");
-        return this;
+        const jsonLoader = new Promise<string>((resolve, reject) => {
+            let xObj = new XMLHttpRequest();
+            xObj.overrideMimeType('application/json');
+            xObj.open('GET', this.path, true);
+            xObj.onreadystatechange = () => {
+                if (xObj.readyState === 4 && xObj.status === 200)
+                    {
+                        this.object = JSON.parse(xObj.responseText);
+                        resolve(this.path);
+                    }
+            }
+            xObj.onerror = () => reject(`Could not load JSON file at ${this.path}`);
+            xObj.send(null);
+        });
+
+        try {
+            const result = await jsonLoader;
+            progressCallback?.(result);
+            return this;
+        } catch (error) {
+            throw new Error(error);
+        }
     }
 }
 
-type AssetTypes = ImageAsset | DataAsset;
+type AssetTypes = ImageAsset | JsonAsset;
 function AssetFactory(id: string, type: AssetType.IMAGE, path: string): ImageAsset;
-function AssetFactory(id: string, type: AssetType.DATA, path: string): DataAsset;
+function AssetFactory(id: string, type: AssetType.JSON, path: string): JsonAsset;
 function AssetFactory(id: string, type: AssetType, path: string): AssetTypes;
 function AssetFactory(id: string, type: AssetType, path: string) {
     switch (type) {
         case AssetType.IMAGE:
             return new ImageAsset(id, path);
-        case AssetType.DATA:
-            return new DataAsset(id, path);
+        case AssetType.JSON:
+            return new JsonAsset(id, path);
     }
 }
 
@@ -97,8 +117,8 @@ export class AssetLoader {
     }
 
     public get(type: AssetType.IMAGE, id: string): HTMLImageElement;
-    public get(type: AssetType.DATA, id: string): string;
-    public get(type: AssetType, id: string): HTMLImageElement | string;
+    public get(type: AssetType.JSON, id: string): any;
+    public get(type: AssetType, id: string): HTMLImageElement | any;
     public get(type: AssetType, id: string) {
         if (!(this._assets.has(id) && this._assets.get(id)?.assetType === type))
             throw new Error(`Couldn't find asset with ID ${id} and type ${type}`);
