@@ -8,22 +8,24 @@ export enum AssetType {
 export type AssetItem = [string, string, AssetType];
 
 abstract class Asset<T> {
+    id: string;
     path: string;
     assetType: AssetType;
     object: T;
 
-    constructor(path: string, assetType: AssetType, object: T) {
+    constructor(id: string, path: string, assetType: AssetType, object: T) {
+        this.id = id;
         this.path = path;
         this.assetType = assetType;
         this.object = object;
     }
 
-    abstract async load(progressCallback?: (message: string) => void): Promise<void>
+    abstract async load(progressCallback?: (message: string) => void): Promise<Asset<T>>
 }
 
 class ImageAsset extends Asset<HTMLImageElement> {
-    constructor(path: string) {
-        super(path, AssetType.IMAGE, new Image());
+    constructor(id: string, path: string) {
+        super(id, path, AssetType.IMAGE, new Image());
     }
 
     public async load(progressCallback?: (message: string) => void) {
@@ -35,6 +37,7 @@ class ImageAsset extends Asset<HTMLImageElement> {
         try {
             const result = await imageLoader;
             progressCallback?.(result);
+            return this;
         } catch (error) {
             throw new Error(error);
         }
@@ -42,24 +45,25 @@ class ImageAsset extends Asset<HTMLImageElement> {
 }
 
 class DataAsset extends Asset<string> {
-    constructor(path: string) {
-        super(path, AssetType.DATA, "");
+    constructor(id: string, path: string) {
+        super(id, path, AssetType.DATA, "");
     }
     public async load(progressCallback?: (message: string) => void) {
         progressCallback?.("");
+        return this;
     }
 }
 
 type AssetTypes = ImageAsset | DataAsset;
-function AssetFactory(type: AssetType.IMAGE, path: string): ImageAsset;
-function AssetFactory(type: AssetType.DATA, path: string): DataAsset;
-function AssetFactory(type: AssetType, path: string): AssetTypes;
-function AssetFactory(type: AssetType, path: string) {
+function AssetFactory(id: string, type: AssetType.IMAGE, path: string): ImageAsset;
+function AssetFactory(id: string, type: AssetType.DATA, path: string): DataAsset;
+function AssetFactory(id: string, type: AssetType, path: string): AssetTypes;
+function AssetFactory(id: string, type: AssetType, path: string) {
     switch (type) {
         case AssetType.IMAGE:
-            return new ImageAsset(path);
+            return new ImageAsset(id, path);
         case AssetType.DATA:
-            return new DataAsset(path);
+            return new DataAsset(id, path);
     }
 }
 
@@ -67,38 +71,46 @@ export class AssetLoader {
 
     constructor() {
         this._assets = new Map();
+        this._loadPromises = [];
     }
 
     public setItemsToLoad(...items: AssetItem[]) {
-        this._assets = new Map();
-        items.forEach(([id, path, assetType]) => this._assets.set(id, AssetFactory(assetType, path)));
+        this._loadPromises = [];
+        items.forEach(
+            ([id, path, assetType], index) =>
+            this._loadPromises.push(AssetFactory(id, assetType, path).load(this.updateProgress.bind(this, index)))
+        );
     }
 
     public async load(doneLoadingCallback?: () => void) {
-        let promises: Promise<void>[] = [];
-        let index = 0;
-        for (let [id, asset] of this._assets) {
-            index++;
-            promises.push(asset.load(this.updateProgress.bind(this, index)));
-        }
-
         try {
-            await Promise.all(promises);
+            const results = await Promise.all(this._loadPromises);
+            this._assets = new Map();
+            results.forEach(asset => this._assets.set(asset.id, asset));
             doneLoadingCallback?.();
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    public get(id: string) {
-        if (this._assets.has(id))
-            return this._assets.get(id)!.object;
+    get(type: AssetType.IMAGE, id: string): HTMLImageElement | null;
+    get(type: AssetType.DATA, id: string): string | null;
+    get(type: AssetType, id: string): HTMLImageElement | string | null;
+    get(type: AssetType, id: string) {
+        if (this._assets.has(id) && this._assets.get(id)?.assetType === type)
+            return this._assets.get(id)?.object;
         return null;
+    }
+
+    has(type: AssetType, id: string)
+    {
+        return this._assets.has(id) && this._assets.get(id)?.assetType === type;
     }
 
     private updateProgress(index: number, message: string) {
         console.log(`${Math.floor(100 * index / this._assets.size)} % loaded (${message})`);
     }
 
+    private _loadPromises: Promise<AssetTypes>[];
     private _assets: Map<string, AssetTypes>;
 }
