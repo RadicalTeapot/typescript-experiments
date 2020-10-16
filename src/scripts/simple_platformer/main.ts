@@ -1,7 +1,11 @@
 import { AssetType } from "../utils/AssetLoader";
 import { Game } from "./Game";
 
-const game = new Game();
+const canvas = document.getElementById("canvas");
+if (!canvas)
+    throw new Error("Could not find canvas");
+
+const game = new Game(canvas as HTMLCanvasElement);
 game.setItemsToLoad(
     ['bgBackground', 'assets/simple_platformer/bg_background.png', AssetType.IMAGE],
     ['bgHills', 'assets/simple_platformer/bg_hills.png', AssetType.IMAGE],
@@ -17,5 +21,17 @@ game.setItemsToLoad(
     ['playerWalk3', 'assets/simple_platformer/player_walk3.png', AssetType.IMAGE],
     ['tileFull', 'assets/simple_platformer/tile_full.png', AssetType.IMAGE],
     ['tileTop', 'assets/simple_platformer/tile_top.png', AssetType.IMAGE],
+);
+game.setWorld(
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    '0000000000000000',
+    'xx00xxxx000xxxxx',
 );
 game.run();

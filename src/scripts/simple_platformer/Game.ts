@@ -2,6 +2,8 @@ import { WithFixedStepUpdate } from "../utils/WithFixedStepUpdate";
 import { WithKeyboardHandler } from "../utils/WithKeyboardHandler";
 import { AssetLoader, AssetItem } from "../utils/AssetLoader";
 import { GameBaseClass } from "../utils/Constructors";
+import { Renderer } from "./Renderer";
+import { World } from "./World";
 
 class Base implements GameBaseClass {
     update() {}
@@ -10,13 +12,23 @@ class Base implements GameBaseClass {
 const BaseConstructor = WithFixedStepUpdate(WithKeyboardHandler(Base));
 
 export class Game extends BaseConstructor {
-    constructor() {
+    get world() {return this._world};
+    get renderer() {return this._renderer};
+    get assets() {return this._assetLoader};
+
+    constructor(canvas: HTMLCanvasElement) {
         super();
         this._assetLoader = new AssetLoader();
+        this._renderer = new Renderer(this, canvas);
+        this._world = new World(this);
     }
 
     public setItemsToLoad(...items: AssetItem[]) {
         this._assetLoader.setItemsToLoad(...items);
+    }
+
+    public setWorld(...map: string[]) {
+        this._world.setMap(...map);
     }
 
     public update() {
@@ -25,7 +37,7 @@ export class Game extends BaseConstructor {
     }
 
     public render() {
-
+        this._renderer.render();
     }
 
     public run() {
@@ -36,4 +48,6 @@ export class Game extends BaseConstructor {
     }
 
     private _assetLoader: AssetLoader;
+    private _renderer: Renderer;
+    private _world: World;
 }
