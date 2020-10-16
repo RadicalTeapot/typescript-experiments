@@ -72,18 +72,21 @@ export class AssetLoader {
     constructor() {
         this._assets = new Map();
         this._loadPromises = [];
+        this._loadedCounter = 0;
+        this.updateProgress = this.updateProgress.bind(this);
     }
 
     public setItemsToLoad(...items: AssetItem[]) {
         this._loadPromises = [];
         items.forEach(
             ([id, path, assetType], index) =>
-            this._loadPromises.push(AssetFactory(id, assetType, path).load(this.updateProgress.bind(this, index)))
+            this._loadPromises.push(AssetFactory(id, assetType, path).load(this.updateProgress))
         );
     }
 
     public async load(doneLoadingCallback?: () => void) {
         try {
+            this._loadedCounter = 0;
             const results = await Promise.all(this._loadPromises);
             this._assets = new Map();
             results.forEach(asset => this._assets.set(asset.id, asset));
@@ -93,24 +96,25 @@ export class AssetLoader {
         }
     }
 
-    get(type: AssetType.IMAGE, id: string): HTMLImageElement | null;
-    get(type: AssetType.DATA, id: string): string | null;
-    get(type: AssetType, id: string): HTMLImageElement | string | null;
-    get(type: AssetType, id: string) {
-        if (this._assets.has(id) && this._assets.get(id)?.assetType === type)
-            return this._assets.get(id)?.object;
-        return null;
+    public get(type: AssetType.IMAGE, id: string): HTMLImageElement;
+    public get(type: AssetType.DATA, id: string): string;
+    public get(type: AssetType, id: string): HTMLImageElement | string;
+    public get(type: AssetType, id: string) {
+        if (!(this._assets.has(id) && this._assets.get(id)?.assetType === type))
+            throw new Error(`Couldn't find asset with ID ${id} and type ${type}`);
+        return this._assets.get(id)!.object;
     }
 
-    has(type: AssetType, id: string)
+    public has(type: AssetType, id: string)
     {
         return this._assets.has(id) && this._assets.get(id)?.assetType === type;
     }
 
-    private updateProgress(index: number, message: string) {
-        console.log(`${Math.floor(100 * index / this._assets.size)} % loaded (${message})`);
+    private updateProgress(message: string) {
+        console.log(`${Math.floor(100 * ++this._loadedCounter / this._loadPromises.length)} % loaded (${message})`);
     }
 
     private _loadPromises: Promise<AssetTypes>[];
     private _assets: Map<string, AssetTypes>;
+    private _loadedCounter: number;
 }
