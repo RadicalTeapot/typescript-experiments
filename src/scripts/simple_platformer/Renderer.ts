@@ -77,7 +77,7 @@ export class Renderer {
         // Render tiles
         this._game.world.render();
         // Render player
-        //Player.render(this.ctx);
+        this._game.player.render();
         this.renderHelpers();
     }
 }
