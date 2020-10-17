@@ -47,31 +47,52 @@ export class Player {
     /** Update player position */
     update() {
         // X movement
-        this.vel[0] = 0;
+        let dx = 0;
         // Collide with screen borders
-        if (this._game.keys.left && this.pos[0] > 0)
-            this.pos[0] += this.vel[0] = -this._params.speed;
-        else if (this._game.keys.right && this.pos[0] <= (this._game.world.width - 1) * this._game.renderer.tileSize)
-            this.pos[0] += this.vel[0] = this._params.speed;
-        this._walkImageCounter += 0.25;
-        if (this.vel[0] === 0)
-            this._walkImageCounter = 0;
+        if (this._game.keys.left)
+            dx = -this._params.speed;
+        else if (this._game.keys.right)
+            dx = this._params.speed;
 
         // Y movement
-        if (this._game.keys.up && this._isGrounded)
-            this.vel[1] = -this._params.jumpVel;
-
         let gravity = this._params.gravity;
-        // Alter gravity if player is falling down or let go of jump button
         if (this.vel[1] > 0 || !this._game.keys.up) gravity *= this._params.gravityMult;
-        this.pos[1] += this.vel[1] += gravity;
-        this._isGrounded = false;
-        // Collide with ground
-        if (this.vel[1] >= 0 && this.pos[1] >= (this._game.world.height - 2) * this._game.renderer.tileSize) { // Going down
-            this.pos[1] = (this._game.world.height - 2) * this._game.renderer.tileSize;
-            this.vel[1] = 0;
-            this._isGrounded = true;
+
+        let dy = this.vel[1];
+        if (this._game.keys.up && this._isGrounded)
+            dy = -this._params.jumpVel;
+        dy += gravity;
+        let canMoveHorizontal: boolean, canMoveVertical: boolean;
+        [canMoveHorizontal, canMoveVertical, dx, dy] = this.tryMove(dx, dy);
+        this._isGrounded = !canMoveVertical;
+        this.pos[0] += this.vel[0] = canMoveHorizontal ? dx : 0;
+        this.pos[1] += this.vel[1] = canMoveVertical ? dy : 0;
+    }
+
+    private tryMove(dx: number, dy: number): [boolean, boolean, number, number] {
+        let canMoveHorizontal = true, canMoveVertical = true;
+        let testPositions = [[this.pos[0] + dx + this._game.renderer.tileSize / 2, this.pos[1] + dy]];
+        if (dy > 0)
+            testPositions[0][1] += this._game.renderer.tileSize - 1;
+        if (dy >= 0 && testPositions[0][1] >= (this._game.world.height - 1) * this._game.renderer.tileSize)
+        {
+            canMoveVertical = false;
+            dy = (this._game.world.height - 1) * this._game.renderer.tileSize - testPositions[0][1];
         }
+        testPositions = [[this.pos[0] + dx, this.pos[1] + dy], [this.pos[0] + dx, this.pos[1] + dy + this._game.renderer.tileSize - 1]];
+        if (dx>= 0) {
+            testPositions[0][0] += this._game.renderer.tileSize - 1;
+            testPositions[1][0] += this._game.renderer.tileSize - 1;
+        }
+        if (dx >=0 && testPositions[0][0] >= this._game.world.width * this._game.renderer.tileSize) {
+            canMoveHorizontal = false;
+            dx = this._game.world.width * this._game.renderer.tileSize - testPositions[0][0]
+        }
+        else if (dx < 0 && testPositions[0][0] < 0) {
+            canMoveHorizontal = false;
+            dx = -testPositions[0][0];
+        }
+        return [canMoveHorizontal, canMoveVertical, dx, dy];
     }
 
     /** Render player */
