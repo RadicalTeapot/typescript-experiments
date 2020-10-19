@@ -3,7 +3,7 @@ import { Game } from "./Game";
 import { Tile } from "./Tile";
 
 export class World {
-    tiles: Tile[];
+    tiles:  (Tile | undefined)[];
     get height() {return this._height};
     get width() {return this._width};
     get map() {return this._map};
@@ -22,14 +22,18 @@ export class World {
         this._width = map[0].length;
         this._map = map;
         this.tiles = [];
-        map.forEach((row, y) => row.split("").forEach((cell, x) => cell === 'x' && this.tiles.push(new Tile([x, y], 'tileTop'))));
+        map.forEach((row, y) => row.split("").forEach((cell, x) => this.tiles[x+y*this._width] = cell === 'x' ? new Tile([x, y], 'tileTop') : undefined));
+    }
+
+    findTile(x: number, y: number) {
+        return this.tiles[x + y * this._width];
     }
 
     /** Render level tiles */
     render() {
         // Dirty scale but works for now
         this.tiles.forEach(tile => {
-            if (this._game.assets.has(AssetType.IMAGE, tile.spriteName))
+            if (tile !== undefined && this._game.assets.has(AssetType.IMAGE, tile.spriteName))
                 this._game.renderer.ctx.drawImage(
                     this._game.assets.get(AssetType.IMAGE, tile.spriteName),
                     tile.x * this._game.renderer.tileSize, tile.y * this._game.renderer.tileSize,
