@@ -47,50 +47,96 @@ export class Player {
     /** Update player position */
     update() {
         // X movement
-        let dx = 0;
-        // Collide with screen borders
-        if (this._game.keys.left)
-            dx = -this._params.speed;
-        else if (this._game.keys.right)
-            dx = this._params.speed;
+        this.vel[0] = 0;
+        if (this._game.keys.left) {
+            this.vel[0] = -this._params.speed;
+            this._walkImageCounter += 0.25;
+        }
+        else if (this._game.keys.right) {
+            this.vel[0] = this._params.speed;
+            this._walkImageCounter += 0.25;
+        }
 
         // Y movement
         let gravity = this._params.gravity;
         if (this.vel[1] > 0 || !this._game.keys.up) gravity *= this._params.gravityMult;
+        this.vel[1] += gravity;
 
-        let dy = this.vel[1];
         if (this._game.keys.up && this._isGrounded)
-            dy = -this._params.jumpVel;
-        dy += gravity;
-        let canMoveHorizontal: boolean, canMoveVertical: boolean;
-        [canMoveHorizontal, canMoveVertical, dx, dy] = this.tryMove(dx, dy);
+            this.vel[1] = -this._params.jumpVel;
+        let [canMoveHorizontal, canMoveVertical, fixX, fixY] = this.tryMove(...this.vel);
+        this.pos[0] += this.vel[0];
+        this.pos[1] += this.vel[1];
+        if (!canMoveHorizontal) {
+            this.pos[0] = fixX;
+            this.vel[0] = 0;
+            this._walkImageCounter = 0;
+        }
+
         this._isGrounded = !canMoveVertical;
-        this.pos[0] += this.vel[0] = canMoveHorizontal ? dx : 0;
-        this.pos[1] += this.vel[1] = canMoveVertical ? dy : 0;
+        if (!canMoveVertical) {
+            this.pos[1] = fixY;
+            this.vel[1] = 0;
+        }
     }
 
     private tryMove(dx: number, dy: number): [boolean, boolean, number, number] {
         let canMoveHorizontal = true, canMoveVertical = true;
-        let testPositions = [[this.pos[0] + dx + this._game.renderer.tileSize / 2, this.pos[1] + dy]];
-        if (dy > 0)
-            testPositions[0][1] += this._game.renderer.tileSize - 1;
-        if (dy >= 0 && testPositions[0][1] >= (this._game.world.height - 1) * this._game.renderer.tileSize)
-        {
-            canMoveVertical = false;
-            dy = (this._game.world.height - 1) * this._game.renderer.tileSize - testPositions[0][1];
+        let testPositions = [
+            [this.pos[0] + dx, this.pos[1]],                                            // Top left (used for horizontal mvt)
+            [this.pos[0] + dx, this.pos[1] + this._game.renderer.tileSize - 1],         // Bottom left (used for horizontal mvt)
+            [this.pos[0] + dx + 3, this.pos[1] + dy],                                   // Bottom leftish (used for vertical mvt)
+            [this.pos[0] + dx + this._game.renderer.tileSize - 3, this.pos[1] + dy]     // Bottom rightish (used for vertical mvt)
+        ];
+        if (dy > 0) { // Falling
+            testPositions[2][1] += this._game.renderer.tileSize - 1;
+            testPositions[3][1] += this._game.renderer.tileSize - 1;
+            // Screen bottom edge
+            if (testPositions[2][1] >= (this._game.world.height) * this._game.renderer.tileSize) {
+                canMoveVertical = false;
+                dy = (this._game.world.height - 1) * this._game.renderer.tileSize;
+            }
+            else if (
+                this._game.world.findTile(Math.floor(testPositions[2][0] / this._game.renderer.tileSize), Math.floor(testPositions[2][1] / this._game.renderer.tileSize)) ||
+                this._game.world.findTile(Math.floor(testPositions[3][0] / this._game.renderer.tileSize), Math.floor(testPositions[3][1] / this._game.renderer.tileSize))
+                ) {
+                canMoveVertical = false;
+                dy = Math.floor(testPositions[2][1] / this._game.renderer.tileSize - 1) * this._game.renderer.tileSize;
+            }
         }
-        testPositions = [[this.pos[0] + dx, this.pos[1] + dy], [this.pos[0] + dx, this.pos[1] + dy + this._game.renderer.tileSize - 1]];
-        if (dx>= 0) {
+        if (canMoveVertical) {
+            testPositions[0][1] += dy;
+            testPositions[1][1] += dy;
+        }
+        if (dx >= 0) { // Moving right
             testPositions[0][0] += this._game.renderer.tileSize - 1;
             testPositions[1][0] += this._game.renderer.tileSize - 1;
+            // Screen right edge
+            if (testPositions[0][0] >= this._game.world.width * this._game.renderer.tileSize) {
+                canMoveHorizontal = false;
+                dx = (this._game.world.width - 1) * this._game.renderer.tileSize;
+            }
+            else if (
+                this._game.world.findTile(Math.floor(testPositions[0][0] / this._game.renderer.tileSize), Math.floor(testPositions[0][1] / this._game.renderer.tileSize)) ||
+                this._game.world.findTile(Math.floor(testPositions[1][0] / this._game.renderer.tileSize), Math.floor(testPositions[1][1] / this._game.renderer.tileSize))
+            ) {
+                canMoveHorizontal = false;
+                dx = Math.floor(testPositions[0][0] / this._game.renderer.tileSize - 1) * this._game.renderer.tileSize;
+            }
         }
-        if (dx >=0 && testPositions[0][0] >= this._game.world.width * this._game.renderer.tileSize) {
-            canMoveHorizontal = false;
-            dx = this._game.world.width * this._game.renderer.tileSize - testPositions[0][0]
-        }
-        else if (dx < 0 && testPositions[0][0] < 0) {
-            canMoveHorizontal = false;
-            dx = -testPositions[0][0];
+        else { // Moving left
+            // Screen left edge
+            if (testPositions[0][0] < 0) {
+                canMoveHorizontal = false;
+                dx = 0;
+            }
+            else if (
+                this._game.world.findTile(Math.floor(testPositions[0][0] / this._game.renderer.tileSize), Math.floor(testPositions[0][1] / this._game.renderer.tileSize)) ||
+                this._game.world.findTile(Math.floor(testPositions[1][0] / this._game.renderer.tileSize), Math.floor(testPositions[1][1] / this._game.renderer.tileSize))
+            ) {
+                canMoveHorizontal = false;
+                dx = Math.floor(testPositions[0][0] / this._game.renderer.tileSize + 1) * this._game.renderer.tileSize;
+            }
         }
         return [canMoveHorizontal, canMoveVertical, dx, dy];
     }
