@@ -1,0 +1,11 @@
+{
+    "debug": false,
+    "player": {
+        "jumpHeight": 2.25,
+        "jumpDist": 3.15,
+        "speed": 4,
+        "gravityMult": 2.5,
+        "jumpVel": 0,
+        "gravity": 0
+    }
+}
