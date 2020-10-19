@@ -23,7 +23,7 @@ export class Game extends BaseConstructor {
         this._assetLoader = new AssetLoader();
         this._renderer = new Renderer(this, canvas);
         this._world = new World(this);
-        this._player = new Player(this, [1 * this._renderer.tileSize, 8 * this._renderer.tileSize]);
+        this._player = new Player(this, [5 * this._renderer.tileSize, 8 * this._renderer.tileSize]);
     }
 
     public setItemsToLoad(...items: AssetItem[]) {
