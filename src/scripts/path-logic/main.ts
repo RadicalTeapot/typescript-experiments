@@ -10,8 +10,8 @@ const game = new Game(canvas as HTMLCanvasElement);
 game.setItemsToLoad(
     ['barrier', 'assets/path-logic/barrier_red.png', AssetType.IMAGE],
     ['car', 'assets/path-logic/car_red_3.png', AssetType.IMAGE],
-    ['landGrass', 'assets/path-logic/land_grass04.png', AssetType.IMAGE],
-    ['landGrassAlt', 'assets/path-logic/land_grass11.png', AssetType.IMAGE],
+    ['grass', 'assets/path-logic/land_grass04.png', AssetType.IMAGE],
+    ['grassAlt', 'assets/path-logic/land_grass11.png', AssetType.IMAGE],
     ['roadStraightVert', 'assets/path-logic/road_asphalt01.png', AssetType.IMAGE],
     ['roadStraightHoriz', 'assets/path-logic/road_asphalt02.png', AssetType.IMAGE],
     ['roadTurnRight', 'assets/path-logic/road_asphalt03.png', AssetType.IMAGE],
