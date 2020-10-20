@@ -3,7 +3,7 @@ import { Game } from "./Game";
 export class Renderer {
     get ctx() {return this._ctx;}
     /** Size of a tile in pixels*/
-    get tileSize() { return 32; };
+    get tileSize() { return 128; };
     /** Scaling factor for renderer objects */
     get scale() { return 2; };
 
