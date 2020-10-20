@@ -1,6 +1,5 @@
 node_modules
 .vscode
-public/scripts
-public/**/*.png
-public/**/*.jpg
+public/*
+!public/**.json
 debug.log
