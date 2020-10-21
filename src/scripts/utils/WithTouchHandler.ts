@@ -15,12 +15,16 @@ class TouchHandler {
 
         this.handleTouchDown = this.handleTouchDown.bind(this);
         this.handleTouchUp = this.handleTouchUp.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
     }
 
     public attach() {
         if (!this._isAttached) {
             document.addEventListener('touchstart', this.handleTouchDown);
             document.addEventListener('touchend', this.handleTouchUp);
+            document.addEventListener('mousedown', this.handleMouseDown);
+            document.addEventListener('mouseup', this.handleMouseUp);
             this._isAttached = true;
         }
     }
@@ -29,6 +33,8 @@ class TouchHandler {
         if (this._isAttached) {
             document.removeEventListener('touchstart', this.handleTouchDown);
             document.removeEventListener('touchend', this.handleTouchUp);
+            document.removeEventListener('mousedown', this.handleMouseDown);
+            document.removeEventListener('mouseup', this.handleMouseUp);
             this._isAttached = false;
         }
     }
@@ -39,6 +45,15 @@ class TouchHandler {
     }
 
     private handleTouchUp(e: TouchEvent) {
+       this._isTouching = false;
+    }
+
+    private handleMouseDown(e: MouseEvent) {
+        this._lastPosition = [e.pageX, e.pageY];
+        this._isTouching = true;
+    }
+
+    private handleMouseUp(e: MouseEvent) {
        this._isTouching = false;
     }
 
