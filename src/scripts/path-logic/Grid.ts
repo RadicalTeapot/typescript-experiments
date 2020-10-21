@@ -4,12 +4,14 @@ import { Game } from "./Game";
 class Tile {
     x: number;
     y: number;
-    spriteID: string = "";
+    backgroundSpriteID: string;
+    spriteID: string;
 
-    constructor(x: number, y: number, spriteID: string) {
+    constructor(x: number, y: number, backgroundSpriteID: string) {
         this.x = x;
         this.y = y;
-        this.spriteID = spriteID;
+        this.backgroundSpriteID = backgroundSpriteID;
+        this.spriteID = "";
     }
 }
 
@@ -29,13 +31,21 @@ export class Grid {
 
     public render() {
         this._tiles.forEach(tile => {
-            if (this._game.assets.has(AssetType.IMAGE, tile.spriteID)) {
+            if (this._game.assets.has(AssetType.IMAGE, tile.backgroundSpriteID)) {
+                this._game.renderer.ctx.drawImage(
+                    this._game.assets.get(AssetType.IMAGE, tile.backgroundSpriteID),
+                    tile.x * this._game.renderer.tileSize,
+                    tile.y * this._game.renderer.tileSize,
+                    this._game.renderer.tileSize, this._game.renderer.tileSize
+                );
+            }
+            if (tile.spriteID !== "" && this._game.assets.has(AssetType.IMAGE, tile.spriteID)) {
                 this._game.renderer.ctx.drawImage(
                     this._game.assets.get(AssetType.IMAGE, tile.spriteID),
                     tile.x * this._game.renderer.tileSize,
                     tile.y * this._game.renderer.tileSize,
                     this._game.renderer.tileSize, this._game.renderer.tileSize
-                )
+                );
             }
         });
     }
