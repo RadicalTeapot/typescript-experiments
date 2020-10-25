@@ -49,24 +49,9 @@ class JsonAsset extends Asset<any> {
         super(id, path, AssetType.JSON, null);
     }
     public async load(progressCallback?: (message: string) => void) {
-        const jsonLoader = new Promise<string>((resolve, reject) => {
-            let xObj = new XMLHttpRequest();
-            xObj.overrideMimeType('application/json');
-            xObj.open('GET', this.path, true);
-            xObj.onreadystatechange = () => {
-                if (xObj.readyState === 4 && xObj.status === 200)
-                    {
-                        this.object = JSON.parse(xObj.responseText);
-                        resolve(this.path);
-                    }
-            }
-            xObj.onerror = () => reject(`Could not load JSON file at ${this.path}`);
-            xObj.send(null);
-        });
-
         try {
-            const result = await jsonLoader;
-            progressCallback?.(result);
+            this.object = await loadJSON(this.path);
+            progressCallback?.(this.path);
             return this;
         } catch (error) {
             throw new Error(error);
@@ -74,11 +59,25 @@ class JsonAsset extends Asset<any> {
     }
 }
 
+export function loadJSON(path: string): Promise<any> {
+    return new Promise<string>((resolve, reject) => {
+        let xObj = new XMLHttpRequest();
+        xObj.overrideMimeType('application/json');
+        xObj.open('GET', path, true);
+        xObj.onreadystatechange = () => {
+            if (xObj.readyState === 4 && xObj.status === 200)
+                resolve(JSON.parse(xObj.responseText));
+        }
+        xObj.onerror = () => reject(`Could not load JSON file at ${path}`);
+        xObj.send(null);
+    });
+}
+
 type AssetTypes = ImageAsset | JsonAsset;
-function AssetFactory(id: string, type: AssetType.IMAGE, path: string): ImageAsset;
-function AssetFactory(id: string, type: AssetType.JSON, path: string): JsonAsset;
-function AssetFactory(id: string, type: AssetType, path: string): AssetTypes;
-function AssetFactory(id: string, type: AssetType, path: string) {
+function assetFactory(id: string, type: AssetType.IMAGE, path: string): ImageAsset;
+function assetFactory(id: string, type: AssetType.JSON, path: string): JsonAsset;
+function assetFactory(id: string, type: AssetType, path: string): AssetTypes;
+function assetFactory(id: string, type: AssetType, path: string) {
     switch (type) {
         case AssetType.IMAGE:
             return new ImageAsset(id, path);
@@ -100,15 +99,15 @@ export class AssetLoader {
         this._loadPromises = [];
         items.forEach(
             ([id, path, assetType], index) =>
-            this._loadPromises.push(AssetFactory(id, assetType, path).load(this.updateProgress))
+            this._loadPromises.push(assetFactory(id, assetType, path).load(this.updateProgress))
         );
     }
 
     public async load(doneLoadingCallback?: () => void) {
         try {
             this._loadedCounter = 0;
-            const results = await Promise.all(this._loadPromises);
             this._assets = new Map();
+            const results = await Promise.all(this._loadPromises);
             results.forEach(asset => this._assets.set(asset.id, asset));
             doneLoadingCallback?.();
         } catch (error) {
