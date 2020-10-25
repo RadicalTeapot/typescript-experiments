@@ -1,10 +1,5 @@
 import { loadJSON } from "./AssetLoader";
 
-export interface TiledData {
-    maps: TiledMap[]
-    tiles: Tile[]
-}
-
 export interface TiledMap {
     tilesets: MapTileset[],
     layers: Layer[],
@@ -45,64 +40,71 @@ export interface Tile {
 }
 
 export class TiledJSONParser {
-    public static async parseMaps(...paths: string[]): Promise<TiledData> {
+    public static async parseMaps(...paths: string[]): Promise<TiledMap[]> {
         const mapLoader = Promise.all(paths.map(path => loadJSON(path) as Promise<TiledMap>));
+
         let maps: TiledMap[] = [];
-        try {
-            maps = await mapLoader;
-        } catch (error) {
-            throw new Error(`Error while loading maps ${error.message}`);
-        }
+        try { maps = await mapLoader; }
+        catch (error) { throw new Error(`Error while loading maps ${error.message}`); }
         console.log("Maps loaded");
 
-        if (maps.length > 1 && !TiledJSONParser.isTilesetsOrderIdentical(maps.map(map => map.tilesets)))
-            throw new Error("Non matching tileset order");
-
-        const tiles = await TiledJSONParser.parseTileSets(maps[0].tilesets);
-        console.log("Tiles loaded");
-
-        return {maps, tiles};
+        return maps;
     }
 
-    private static isTilesetsOrderIdentical(mapTilesets: MapTileset[][]): boolean {
+    public static async parseTileSets(map: TiledMap, tilesetFolder: string, imagesRootFolder: string): Promise<Tile[]> {
+        let result: Tile[][] = [];
+        try { result = await TiledJSONParser.loadTiles(TiledJSONParser.getMapTilesets(map, tilesetFolder), imagesRootFolder); }
+        catch (error) { throw new Error(error.message); }
+
+        const tiles = result.reduce((current, accumulator) => {
+            accumulator.push(...current);
+            return accumulator;
+        }, []);
+        console.log("Tiles loaded");
+
+        return tiles;
+    }
+
+    private static async loadTiles(tilesets: MapTileset[], imagesRootFolder: string): Promise<Tile[][]> {
+        const tileLoader = Promise.all(tilesets.map(async ({source, firstgid}) => {
+            const tileset: Tileset = await loadJSON(source);
+            tileset.tiles.forEach(tile => {
+                // Increase local tile id by tileset offset
+                tile.id += firstgid;
+                // Fix path
+                tile.image = `${imagesRootFolder}/${tile.image.split('/').slice(-2).join("/")}`;
+            });
+            return tileset.tiles;
+        }));
+
+        let tiles: Tile[][] = [];
+        try { tiles = await tileLoader; }
+        catch (error) { throw new Error(`Error while loading tiles ${error.message}`) }
+        return tiles;
+    }
+
+    private static getMapTilesets(map: TiledMap, tilesetFolder: string): MapTileset[] {
+        return map.tilesets.map(tileset =>
+            ({...tileset,
+                // Fix path to tileset json file
+                source:`${tilesetFolder}/${TiledJSONParser.extractFileName(tileset.source)}.json`
+            })
+        );
+    }
+
+    public static areTilesetsOrderIdentical(maps: TiledMap[]): boolean {
+        if (maps.length < 2)
+            return true;
+
         let order: Map<string, number> = new Map();
-        mapTilesets[0].forEach(tileset => order.set(tileset.source, tileset.firstgid));
-        return mapTilesets.slice(1).some(tilesets =>
-            tilesets.some(tileset => !order.has(tileset.source) || order.get(tileset.source) !== tileset.firstgid)
+        maps[0].tilesets.forEach(tileset => order.set(tileset.source, tileset.firstgid));
+        return maps.slice(1).some(map =>
+            map.tilesets.some(tileset => !order.has(tileset.source) || order.get(tileset.source) !== tileset.firstgid)
         )
     }
 
     private static extractFileName(path: string) {
         const [filename,] = path.split('/').slice(-1);
         return filename.split('.')[0];
-    }
-
-    private static async loadTileset(name: string): Promise<Tileset> {
-        const path = `assets/path-logic/data/tilesets/${name}.json`;
-        return await loadJSON(path);
-    }
-
-    private static async parseTileSets(tilesets: MapTileset[]) {
-        const filenames = tilesets.map(tileset => TiledJSONParser.extractFileName(tileset.source));
-        const tileLoader = Promise.all(filenames.map(async (filename, index) => {
-            const tileset = await this.loadTileset(filename);
-            tileset.tiles.forEach(tile => {
-                // Increase local tile id by tileset offset
-                tile.id += tilesets[index].firstgid;
-                // Fix path
-                tile.image = `assets/path-logic/${tile.image.split('/').slice(-2).join("/")}`;
-            });
-            return tileset.tiles;
-        }));
-        try {
-            const result = await tileLoader;
-            const tiles = result.reduce((current, accumulator) => {
-                accumulator.push(...current);
-                return accumulator;
-            }, []);
-            return tiles;
-        } catch (error) {
-            throw new Error(`Error while loading tiles ${error.message}`)
-        }
     }
 }
