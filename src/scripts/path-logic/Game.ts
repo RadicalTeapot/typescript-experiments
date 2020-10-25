@@ -1,5 +1,6 @@
-import { AssetItem, AssetLoader } from "../utils/AssetLoader";
+import { AssetItem, AssetLoader, AssetType } from "../utils/AssetLoader";
 import { GameBaseClass } from "../utils/Constructors";
+import { Tile, TiledJSONParser, TiledMap } from "../utils/TiledJSONParser";
 import { WithFixedStepUpdate } from "../utils/WithFixedStepUpdate";
 import { WithTouchHandler } from "../utils/WithTouchHandler";
 import { Grid } from "./Grid";
@@ -25,6 +26,7 @@ export class Game extends BaseConstructor {
     }
 
     public update() {
+        /*
         if (this.touchState.isTouching && this._lastChangeCounter === 0) {
             let [x, y] = this.touchState.lastPosition;
             x = Math.floor(x / this._renderer.tileSize);
@@ -38,6 +40,7 @@ export class Game extends BaseConstructor {
         else if (this._lastChangeCounter > 0) {
             this._lastChangeCounter--;
         }
+        */
     }
 
     public render() {
@@ -45,20 +48,40 @@ export class Game extends BaseConstructor {
     }
 
     public run() {
-        this._assetLoader
-            .load(() => { console.log("All assets loaded") })
-            .then(result => {
-                super.run();
-            })
-            .catch(error => console.log(`Error while loading assets: ${error}`));
+        this.start()
+            .then(result => super.run())
+            .catch(reason => console.log(reason))
+        ;
     }
 
-    public setItemsToLoad(...items: AssetItem[]) {
-        this._assetLoader.setItemsToLoad(...items);
+    public loadMaps(...pathToMaps: string[]) {
+        this._pathToMaps = pathToMaps;
+    }
+
+    private async start() {
+        let maps: TiledMap[], tiles: Tile[];
+        try {
+            const result = await TiledJSONParser.parseMaps(...this._pathToMaps);
+            maps = result.maps;
+            tiles = result.tiles;
+        } catch (error) {
+            throw new Error(`Error while parsing maps ${error.message}`)
+        }
+
+        this._assetLoader.setItemsToLoad(
+            ...tiles.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
+        );
+
+        try {
+            await this._assetLoader.load(() => { console.log("All assets loaded") });
+        } catch (error) {
+            throw new Error(`Error while loading assets ${error.message}`);
+        }
     }
 
     private _assetLoader: AssetLoader;
     private _renderer: Renderer;
     private _grid: Grid;
     private _lastChangeCounter: number;
+    private _pathToMaps: string[] = [];
 }
