@@ -54,19 +54,29 @@ export class Game extends BaseConstructor {
         ;
     }
 
-    public loadMaps(...pathToMaps: string[]) {
+    public setPathsToMaps(...pathToMaps: string[]) {
         this._pathToMaps = pathToMaps;
     }
 
+    private async loadTiledData(): Promise<Tile[]> {
+        let maps: TiledMap[];
+        try { maps = await TiledJSONParser.parseMaps(...this._pathToMaps); }
+        catch (error) { throw new Error(`Error while parsing maps ${error.message}`) }
+
+        if (!TiledJSONParser.areTilesetsOrderIdentical(maps))
+            throw new Error("Non matching tileset order");
+
+        let tiles: Tile[] = [];
+        try { tiles = await TiledJSONParser.parseTileSets(maps[0], 'assets/path-logic/data/tilesets', 'assets/path-logic'); }
+        catch (error) { throw new Error (`Error while parsing tilesets ${error.message}`)}
+
+        return tiles;
+    }
+
     private async start() {
-        let maps: TiledMap[], tiles: Tile[];
-        try {
-            const result = await TiledJSONParser.parseMaps(...this._pathToMaps);
-            maps = result.maps;
-            tiles = result.tiles;
-        } catch (error) {
-            throw new Error(`Error while parsing maps ${error.message}`)
-        }
+        let tiles: Tile[] = [];
+        try { tiles = await this.loadTiledData(); }
+        catch (error) { throw new Error(`Error while loading tiled data ${error.message}`); }
 
         this._assetLoader.setItemsToLoad(
             ...tiles.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)

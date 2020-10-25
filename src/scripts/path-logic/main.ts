@@ -7,5 +7,5 @@ if (!canvas)
 
 
 const game = new Game(canvas as HTMLCanvasElement);
-game.loadMaps('assets/path-logic/data/maps/map1.json');
+game.setPathsToMaps('assets/path-logic/data/maps/map1.json');
 game.run();
