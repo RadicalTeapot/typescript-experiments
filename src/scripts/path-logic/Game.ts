@@ -58,35 +58,52 @@ export class Game extends BaseConstructor {
         this._pathToMaps = pathToMaps;
     }
 
-    private async loadTiledData(): Promise<Tile[]> {
-        let maps: TiledMap[];
-        try { maps = await TiledJSONParser.parseMaps(...this._pathToMaps); }
-        catch (error) { throw new Error(`Error while parsing maps ${error.message}`) }
+    private async loadTiledMaps() {
+        this._maps = [];
 
-        if (!TiledJSONParser.areTilesetsOrderIdentical(maps))
+        if (this._pathToMaps.length > 0)
+        {
+            try { this._maps = await TiledJSONParser.parseMaps(...this._pathToMaps); }
+            catch (error) { throw new Error(`Error while parsing maps ${error.message}`) }
+        }
+
+        if (!TiledJSONParser.areTilesetsOrderIdentical(this._maps))
             throw new Error("Non matching tileset order");
+    }
 
+    private async loadTiles(): Promise<Tile[]> {
         let tiles: Tile[] = [];
-        try { tiles = await TiledJSONParser.parseTileSets(maps[0], 'assets/path-logic/data/tilesets', 'assets/path-logic'); }
-        catch (error) { throw new Error (`Error while parsing tilesets ${error.message}`)}
+
+        if (this._maps.length > 0)
+        {
+            try { tiles = await TiledJSONParser.parseTileSets(this._maps[0], 'assets/path-logic/data/tilesets', 'assets/path-logic'); }
+            catch (error) { throw new Error (`Error while parsing tilesets ${error.message}`)}
+        }
 
         return tiles;
     }
 
     private async start() {
-        let tiles: Tile[] = [];
-        try { tiles = await this.loadTiledData(); }
-        catch (error) { throw new Error(`Error while loading tiled data ${error.message}`); }
+        // Load maps
+        try { await this.loadTiledMaps(); }
+        catch (error) { throw new Error(`Error while loading tiled maps ${error.message}`) }
+        console.log("Maps loaded");
 
+        if (this._maps.length > 0)
+            this._grid.setMap(this._maps[0]);
+
+        // Load tiles
+        let tiles: Tile[] = [];
+        try { tiles = await this.loadTiles(); }
+        catch (error) { throw new Error(`Error while loading tiled data ${error.message}`); }
+        console.log("Tiles loaded");
+
+        // Load tile images
         this._assetLoader.setItemsToLoad(
             ...tiles.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
         );
-
-        try {
-            await this._assetLoader.load(() => { console.log("All assets loaded") });
-        } catch (error) {
-            throw new Error(`Error while loading assets ${error.message}`);
-        }
+        try { await this._assetLoader.load(() => { console.log("All assets loaded") }); }
+        catch (error) { throw new Error(`Error while loading assets ${error.message}`); }
     }
 
     private _assetLoader: AssetLoader;
@@ -94,4 +111,5 @@ export class Game extends BaseConstructor {
     private _grid: Grid;
     private _lastChangeCounter: number;
     private _pathToMaps: string[] = [];
+    private _maps: TiledMap[] = [];
 }
