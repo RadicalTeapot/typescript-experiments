@@ -26,21 +26,20 @@ export class Game extends BaseConstructor {
     }
 
     public update() {
-        /*
         if (this.touchState.isTouching && this._lastChangeCounter === 0) {
             let [x, y] = this.touchState.lastPosition;
-            x = Math.floor(x / this._renderer.tileSize);
-            y = Math.floor(y / this._renderer.tileSize);
-            const tile = this._grid.getTile(x, y);
+            const canvasRect = this._renderer.canvas.getBoundingClientRect();
+            x = Math.floor((x - canvasRect.left) / (this._renderer.tileSize * this._renderer.scale));
+            y = Math.floor((y - canvasRect.top) / (this._renderer.tileSize * this._renderer.scale));
+            const tile = this._grid.getInteractiveTile(x, y);
             if (tile) {
-                this._grid.setTileType(x, y, tile.spriteID === "" ? "roadTurnRight" : "");
+                this._grid.setInteractiveTileID(x, y, (parseInt(tile.tileID)-39)%4 + 40);
             }
             this._lastChangeCounter = 20;
         }
         else if (this._lastChangeCounter > 0) {
             this._lastChangeCounter--;
         }
-        */
     }
 
     public render() {
@@ -63,7 +62,15 @@ export class Game extends BaseConstructor {
 
     private loadLevel(levelIndex: number) {
         if (levelIndex < this._maps.length)
+        {
             this._grid.setMap(this._maps[levelIndex]);
+            this._grid.setHintLayersOpacity(0.5);
+            const interactive = this._grid.getInteractiveLayer();
+            if (interactive) {
+                // Save current values (correct ones)
+                // Randomize all exisiting tiles
+            }
+        }
     }
 
     private async loadTiledMaps() {
