@@ -49,13 +49,21 @@ export class Game extends BaseConstructor {
 
     public run() {
         this.start()
-            .then(result => super.run())
+            .then(result => {
+                this.loadLevel(0);
+                super.run()
+            })
             .catch(reason => console.log(reason))
         ;
     }
 
     public setPathsToMaps(...pathToMaps: string[]) {
         this._pathToMaps = pathToMaps;
+    }
+
+    private loadLevel(levelIndex: number) {
+        if (levelIndex < this._maps.length)
+            this._grid.setMap(this._maps[levelIndex]);
     }
 
     private async loadTiledMaps() {
@@ -88,9 +96,6 @@ export class Game extends BaseConstructor {
         try { await this.loadTiledMaps(); }
         catch (error) { throw new Error(`Error while loading tiled maps ${error.message}`) }
         console.log("Maps loaded");
-
-        if (this._maps.length > 0)
-            this._grid.setMap(this._maps[0]);
 
         // Load tiles
         let tiles: Tile[] = [];
