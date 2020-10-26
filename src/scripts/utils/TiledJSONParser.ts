@@ -2,7 +2,9 @@ import { loadJSON } from "./AssetLoader";
 
 export interface TiledMap {
     tilesets: MapTileset[],
-    layers: Layer[],
+    layers: TiledLayer[],
+    width: number,
+    height: number,
 }
 
 interface MapTileset {
@@ -10,13 +12,20 @@ interface MapTileset {
     source: string,
 }
 
-interface Layer {
+export interface TiledLayer {
     data?: number[]
     type: string
     name: string,
-    layers?: Layer[]
+    layers?: TiledLayer[]
     objects?: TiledObject[],
     visible: boolean,
+    properties?: TiledLayerProperty[]
+}
+
+export interface TiledLayerProperty {
+    name: string,
+    type: string,
+    value: boolean | string | number
 }
 
 interface TiledObject {
@@ -46,7 +55,6 @@ export class TiledJSONParser {
         let maps: TiledMap[] = [];
         try { maps = await mapLoader; }
         catch (error) { throw new Error(`Error while loading maps ${error.message}`); }
-        console.log("Maps loaded");
 
         return maps;
     }
@@ -60,7 +68,6 @@ export class TiledJSONParser {
             accumulator.push(...current);
             return accumulator;
         }, []);
-        console.log("Tiles loaded");
 
         return tiles;
     }
