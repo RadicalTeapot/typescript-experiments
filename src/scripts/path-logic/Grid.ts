@@ -14,6 +14,14 @@ class GridTile {
     }
 }
 
+interface GridLayer {
+    tiles: GridTile[],
+    isInteractive: boolean,
+    isHintLayer: boolean,
+    opacity: number,
+    visible: boolean,
+}
+
 export class Grid {
     get width() { return this._width };
     get height() { return this._height };
@@ -32,17 +40,25 @@ export class Grid {
 
         // Fill layers
         let tileLayers = this.extractTileLayers(map);
-        this._layers = tileLayers.filter(layer=> layer.data && layer.data.length > 0).map(layer => {
-            let layerData: GridTile[] = [];
+        this._layers = tileLayers.filter(layer => layer.data && layer.data.length > 0).map((layer, index) => {
+            let gridLayer: GridLayer = {
+                tiles: [],
+                isInteractive: this.isLayerInteractive(layer),
+                isHintLayer: this.isHintLayer(layer),
+                opacity: 1.0,
+                visible: true,
+            };
             let x = 0, y = 0;
             layer.data!.forEach((tileID, index) => {
                 if (tileID > 0) {
                     x = index % this._width;
                     y = Math.floor(index / this._width);
-                    layerData[x + y * this.width] = new GridTile(x, y, tileID.toString());
+                    gridLayer.tiles[x + y * this.width] = new GridTile(x, y, tileID.toString());
                 }
             })
-            return layerData;
+            if (gridLayer.isInteractive)
+                this._interactiveLayerIndex = index;
+            return gridLayer;
         })
     }
 
@@ -52,13 +68,13 @@ export class Grid {
     }
 
     public getInteractiveTile(x: number, y: number) {
-        return this._layers[this._interactiveLayerIndex][x + y * this.width];
+        return this._layers[this._interactiveLayerIndex].tiles[x + y * this.width];
     }
 
-    public setTileID(x: number, y: number, tileID: string) {
+    public setInteractiveTileID(x: number, y: number, tileID: number) {
         const tile = this.getInteractiveTile(x, y);
         if (tile)
-            tile.tileID = tileID;
+            tile.tileID = tileID.toString();
     }
 
     /** Use depth first search so returned layers should ordered properly */
@@ -66,16 +82,27 @@ export class Grid {
         let layers: TiledLayer[] = [];
         const getTileLayers = (layer: TiledLayer) => {
             if (layer.type === 'tilelayer' && this.isLayerRenderable(layer))
-            {
                 layers.push(layer);
-                if (this.isLayerInteractive(layer))
-                    this._interactiveLayerIndex = layers.length - 1;
-            }
             else if (layer.type === 'group')
                 layer.layers?.forEach(child => getTileLayers(child));
         };
         map.layers.forEach(child => getTileLayers(child));
         return layers;
+    }
+
+    public setHintLayersOpacity(opacity: number) {
+        this._layers.filter(layer => layer.isHintLayer).forEach(layer => layer.opacity = opacity);
+    }
+
+    public getInteractiveLayer() {
+        return this._layers.find(layer => layer.isInteractive);
+    }
+
+    private isHintLayer(layer: TiledLayer): boolean {
+        let isHint = false;
+        if (layer.properties && layer.properties.length > 0)
+            isHint = layer.properties.some(property => property.name === "hintLayer" && property.type === "bool" && property.value === true);
+        return isHint;
     }
 
     private isLayerRenderable(layer: TiledLayer): boolean {
@@ -94,16 +121,17 @@ export class Grid {
 
     private renderLayers() {
         if (this._layers.length > 0) {
-            this._layers.forEach(layer =>
-                layer.filter(tile => this.isTileValid(tile)).forEach(tile =>
+            this._layers.forEach(layer => {
+                this._game.renderer.ctx.globalAlpha = layer.opacity;
+                layer.tiles.filter(tile => this.isTileValid(tile)).forEach(tile =>
                     this._game.renderer.ctx.drawImage(
                         this._game.assets.get(AssetType.IMAGE, tile.tileID),
                         tile.x * this._game.renderer.tileSize,
                         tile.y * this._game.renderer.tileSize,
                         this._game.renderer.tileSize, this._game.renderer.tileSize
                     )
-                )
-            )
+                );
+            })
         }
     }
 
@@ -126,7 +154,7 @@ export class Grid {
         this._game.renderer.ctx.stroke();
     }
 
-    private _layers: GridTile[][];
+    private _layers: GridLayer[];
     private _interactiveLayerIndex: number;
     private _width: number;
     private _height: number;
