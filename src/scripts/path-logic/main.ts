@@ -1,4 +1,3 @@
-import { AssetType } from "../utils/AssetLoader";
 import { Game } from "./Game";
 
 const canvas = document.getElementById("canvas");
