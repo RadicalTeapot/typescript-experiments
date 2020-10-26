@@ -1,11 +1,11 @@
 import { Game } from "./Game";
 
 export class Renderer {
-    get ctx() {return this._ctx;}
+    get canvas() { return this._canvas; }
+    get ctx() { return this._ctx; }
     /** Size of a tile in pixels*/
     get tileSize() { return 128; };
-    /** Scaling factor for renderer objects */
-    get scale() { return 2; };
+    get scale() { return this._scale; }
 
     constructor(game: Game, canvas: HTMLCanvasElement) {
         const ctx = canvas.getContext("2d");
@@ -18,12 +18,15 @@ export class Renderer {
     }
 
     render() {
-        this._canvas.width = this._game.grid.width * this.tileSize * this.scale;
-        this._canvas.height = this._game.grid.height * this.tileSize * this.scale;
+        this._scale = innerHeight / (this.tileSize * this._game.grid.height);
+        this._canvas.width = this._game.grid.width * this.tileSize * this._scale;
+        this._canvas.height = this._game.grid.height * this.tileSize * this._scale;
+        this.ctx.scale(this._scale, this._scale);
         this._game.grid.render();
     }
 
     private _game: Game;
     private _canvas: HTMLCanvasElement;
     private _ctx: CanvasRenderingContext2D;
+    private _scale: number = 1;
 }
