@@ -2,7 +2,7 @@ import { AssetType } from "../utils/AssetLoader";
 import { TiledLayer, TiledMap } from "../utils/TiledJSONParser";
 import { Game } from "./Game";
 
-class GridTile {
+class LevelTile {
     x: number;
     y: number;
     tileID: string;
@@ -14,34 +14,32 @@ class GridTile {
     }
 }
 
-interface GridLayer {
-    tiles: GridTile[],
+interface LevelLayer {
+    tiles: LevelTile[],
     isInteractive: boolean,
     isHintLayer: boolean,
     opacity: number,
     visible: boolean,
 }
 
-export class Grid {
+export class Level {
     get width() { return this._width };
     get height() { return this._height };
 
-    constructor(game: Game) {
+    constructor(game: Game, map: TiledMap) {
         this._game = game;
-        this._layers = [];
-        this._width = 0;
-        this._height = 0;
-        this._interactiveLayerIndex = -1;
+        this._map = map;
+        this.loadMap();
     }
 
-    public setMap(map: TiledMap) {
-        this._width = map.width;
-        this._height = map.height;
+    private loadMap() {
+        this._width = this._map.width;
+        this._height = this._map.height;
 
         // Fill layers
-        let tileLayers = this.extractTileLayers(map);
+        let tileLayers = this.extractTileLayers(this._map);
         this._layers = tileLayers.filter(layer => layer.data && layer.data.length > 0).map((layer, index) => {
-            let gridLayer: GridLayer = {
+            let gridLayer: LevelLayer = {
                 tiles: [],
                 isInteractive: this.isLayerInteractive(layer),
                 isHintLayer: this.isHintLayer(layer),
@@ -53,13 +51,31 @@ export class Grid {
                 if (tileID > 0) {
                     x = index % this._width;
                     y = Math.floor(index / this._width);
-                    gridLayer.tiles[x + y * this.width] = new GridTile(x, y, tileID.toString());
+                    gridLayer.tiles[x + y * this.width] = new LevelTile(x, y, tileID.toString());
                 }
             })
             if (gridLayer.isInteractive)
                 this._interactiveLayerIndex = index;
             return gridLayer;
         })
+    }
+
+    public start() {
+        this.setHintLayersOpacity(0.5);
+        // TODO Store interactive layer initial state
+        // TODO Randomize interactive layer
+    }
+
+    public isComplete() {
+        // TODO Return true when all interactive tiles are back in their original positions
+        return false;
+    }
+
+    public tryFlipTile(x: number, y: number) {
+        const tile = this.getInteractiveTile(x, y);
+        if (tile) {
+            this.setInteractiveTileID(x, y, (parseInt(tile.tileID) - 39) % 4 + 40);
+        }
     }
 
     public render() {
@@ -135,7 +151,7 @@ export class Grid {
         }
     }
 
-    private isTileValid(tile: GridTile) {
+    private isTileValid(tile: LevelTile) {
         return this._game.assets.has(AssetType.IMAGE, tile.tileID);
     }
 
@@ -154,9 +170,10 @@ export class Grid {
         this._game.renderer.ctx.stroke();
     }
 
-    private _layers: GridLayer[];
-    private _interactiveLayerIndex: number;
-    private _width: number;
-    private _height: number;
+    private _layers: LevelLayer[] = [];
+    private _interactiveLayerIndex: number = -1;
+    private _width: number = 0;
+    private _height: number = 0;
     private _game: Game;
+    private _map: TiledMap;
 }
