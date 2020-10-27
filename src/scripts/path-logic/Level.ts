@@ -29,7 +29,6 @@ export class Level {
     constructor(game: Game, map: TiledMap) {
         this._game = game;
         this._map = map;
-        this.loadMap();
     }
 
     private loadMap() {
@@ -61,6 +60,7 @@ export class Level {
     }
 
     public start() {
+        this.loadMap();
         this.setHintLayersOpacity(0.5);
         // TODO Store interactive layer initial state
         // TODO Randomize interactive layer
