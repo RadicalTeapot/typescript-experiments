@@ -18,11 +18,11 @@ export class Renderer {
     }
 
     render() {
-        this._scale = innerHeight / (this.tileSize * this._game.grid.height);
-        this._canvas.width = this._game.grid.width * this.tileSize * this._scale;
-        this._canvas.height = this._game.grid.height * this.tileSize * this._scale;
+        this._scale = innerHeight / (this.tileSize * this._game.currentLevel.height);
+        this._canvas.width = this._game.currentLevel.width * this.tileSize * this._scale;
+        this._canvas.height = this._game.currentLevel.height * this.tileSize * this._scale;
         this.ctx.scale(this._scale, this._scale);
-        this._game.grid.render();
+        this._game.currentLevel.render();
     }
 
     private _game: Game;

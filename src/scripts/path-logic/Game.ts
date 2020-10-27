@@ -3,7 +3,7 @@ import { GameBaseClass } from "../utils/Constructors";
 import { Tile, TiledJSONParser, TiledMap } from "../utils/TiledJSONParser";
 import { WithFixedStepUpdate } from "../utils/WithFixedStepUpdate";
 import { WithTouchHandler } from "../utils/WithTouchHandler";
-import { Grid } from "./Grid";
+import { LevelManager } from "./LevelManager";
 import { Renderer } from "./Renderer";
 
 class BaseClass implements GameBaseClass {
@@ -13,16 +13,17 @@ class BaseClass implements GameBaseClass {
 
 const BaseConstructor = WithTouchHandler(WithFixedStepUpdate(BaseClass));
 export class Game extends BaseConstructor {
-    get renderer() {return this._renderer};
-    get assets() {return this._assetLoader};
-    get grid() {return this._grid};
+    get renderer() { return this._renderer }
+    get assets() { return this._assetLoader }
+    get currentLevel() { return this._levelManager.currentLevel }
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor(canvas: HTMLCanvasElement, ...pathToMaps: string[]) {
         super();
         this._assetLoader = new AssetLoader();
         this._renderer = new Renderer(this, canvas);
-        this._grid = new Grid(this);
+        this._levelManager = new LevelManager(this);
         this._lastChangeCounter = 0;
+        this._pathToMaps = pathToMaps;
     }
 
     public update() {
@@ -31,10 +32,7 @@ export class Game extends BaseConstructor {
             const canvasRect = this._renderer.canvas.getBoundingClientRect();
             x = Math.floor((x - canvasRect.left) / (this._renderer.tileSize * this._renderer.scale));
             y = Math.floor((y - canvasRect.top) / (this._renderer.tileSize * this._renderer.scale));
-            const tile = this._grid.getInteractiveTile(x, y);
-            if (tile) {
-                this._grid.setInteractiveTileID(x, y, (parseInt(tile.tileID)-39)%4 + 40);
-            }
+            this._levelManager.currentLevel.tryFlipTile(x, y);
             this._lastChangeCounter = 20;
         }
         else if (this._lastChangeCounter > 0) {
@@ -47,81 +45,58 @@ export class Game extends BaseConstructor {
     }
 
     public run() {
-        this.start()
-            .then(result => {
-                this.loadLevel(0);
-                super.run()
-            })
-            .catch(reason => console.log(reason))
-        ;
-    }
-
-    public setPathsToMaps(...pathToMaps: string[]) {
-        this._pathToMaps = pathToMaps;
-    }
-
-    private loadLevel(levelIndex: number) {
-        if (levelIndex < this._maps.length)
-        {
-            this._grid.setMap(this._maps[levelIndex]);
-            this._grid.setHintLayersOpacity(0.5);
-            const interactive = this._grid.getInteractiveLayer();
-            if (interactive) {
-                // Save current values (correct ones)
-                // Randomize all exisiting tiles
-            }
+        if (this._pathToMaps.length > 0) {
+            Loader.loadMaps(this._pathToMaps)
+                .then(result => {
+                    this._levelManager.setMaps(result);
+                    if (result.length > 0)
+                        return Loader.loadTiles(result[0]);
+                    else
+                        return Promise.reject("No maps loaded");
+                })
+                .then(result => {
+                    this._assetLoader.setItemsToLoad(
+                        ...result.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
+                    );
+                    return this._assetLoader.load(() => console.log("All assets loaded"));
+                })
+                .then(() => {
+                    this._levelManager.startLevel(0);
+                    super.run();
+                })
+                .catch(reason => console.log(reason));
         }
-    }
-
-    private async loadTiledMaps() {
-        this._maps = [];
-
-        if (this._pathToMaps.length > 0)
-        {
-            try { this._maps = await TiledJSONParser.parseMaps(...this._pathToMaps); }
-            catch (error) { throw new Error(`Error while parsing maps ${error.message}`) }
-        }
-
-        if (!TiledJSONParser.areTilesetsOrderIdentical(this._maps))
-            throw new Error("Non matching tileset order");
-    }
-
-    private async loadTiles(): Promise<Tile[]> {
-        let tiles: Tile[] = [];
-
-        if (this._maps.length > 0)
-        {
-            try { tiles = await TiledJSONParser.parseTileSets(this._maps[0], 'assets/path-logic/data/tilesets', 'assets/path-logic'); }
-            catch (error) { throw new Error (`Error while parsing tilesets ${error.message}`)}
-        }
-
-        return tiles;
-    }
-
-    private async start() {
-        // Load maps
-        try { await this.loadTiledMaps(); }
-        catch (error) { throw new Error(`Error while loading tiled maps ${error.message}`) }
-        console.log("Maps loaded");
-
-        // Load tiles
-        let tiles: Tile[] = [];
-        try { tiles = await this.loadTiles(); }
-        catch (error) { throw new Error(`Error while loading tiled data ${error.message}`); }
-        console.log("Tiles loaded");
-
-        // Load tile images
-        this._assetLoader.setItemsToLoad(
-            ...tiles.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
-        );
-        try { await this._assetLoader.load(() => { console.log("All assets loaded") }); }
-        catch (error) { throw new Error(`Error while loading assets ${error.message}`); }
     }
 
     private _assetLoader: AssetLoader;
     private _renderer: Renderer;
-    private _grid: Grid;
+    private _levelManager: LevelManager;
     private _lastChangeCounter: number;
-    private _pathToMaps: string[] = [];
-    private _maps: TiledMap[] = [];
+    private _pathToMaps: string[];
+}
+
+class Loader {
+    public static async loadMaps(pathToMaps: string[]): Promise<TiledMap[]> {
+        let maps: TiledMap[] = [];
+
+        if (pathToMaps.length > 0)
+        {
+            try { maps = await TiledJSONParser.parseMaps(...pathToMaps); }
+            catch (error) { throw new Error(`Error while parsing maps ${error.message}`) }
+        }
+
+        if (!TiledJSONParser.areTilesetsOrderIdentical(maps))
+            throw new Error("Non matching tileset order");
+
+        return maps;
+    }
+
+    public static async loadTiles(map: TiledMap): Promise<Tile[]> {
+        let tiles: Tile[] = [];
+
+        try { tiles = await TiledJSONParser.parseTileSets(map, 'assets/path-logic/data/tilesets', 'assets/path-logic'); }
+        catch (error) { throw new Error(`Error while parsing tilesets ${error.message}`) }
+
+        return tiles;
+    }
 }
