@@ -1,5 +1,6 @@
 import { AssetItem, AssetType } from "../utils/AssetLoader";
 import { Game } from "./Game";
+import { Level } from "./Level";
 import { Loader } from "./Loader";
 
 type StateType = StartScreenState | LoadedLevelState | LevelWonState;
@@ -67,11 +68,17 @@ export class StartScreenState extends State<StartScreenParams> {
             return this._context.game.assets.load(() => console.log("All assets loaded"));
         })
         .then(() => {
-            this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
+            // Disabled for testing purposes
+            // this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
         })
         .catch((reason: Error) => {
             this._context.transitionTo(ErrorState, {error: reason})
         });
+    }
+
+    // For testing purposes
+    public touched(x: number, y: number) {
+        this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
     }
 
     public render() {
@@ -104,21 +111,45 @@ export class LevelSelectorState extends State<{}> {}
 interface LoadedLevelParams {levelIndex: number}
 export class LoadedLevelState extends State<LoadedLevelParams> {
     public enter() {
-        this._context.game.levelManager.startLevel(this._params.levelIndex);
+        this._currentLevel = this._context.game.levelManager.startLevel(this._params.levelIndex);
+        if (!this._currentLevel)
+            this._context.transitionTo(ErrorState, {error: new Error(`Could not load level ${this._params.levelIndex}`)});
     }
 
     public touched(x: number, y: number) {
-        x = Math.floor(x / (this._context.game.renderer.tileSize * this._context.game.renderer.scale));
-        y = Math.floor(y / (this._context.game.renderer.tileSize * this._context.game.renderer.scale));
-        this._context.game.levelManager.currentLevel.tryFlipTile(x, y);
-        if (this._context.game.levelManager.currentLevel.isComplete()) {
+        x = Math.floor((x - this._translate[0]) / this._tileSize);
+        y = Math.floor((y - this._translate[1]) / this._tileSize);
+        this._currentLevel?.tryFlipTile(x, y);
+        if (this._currentLevel?.isComplete()) {
             this._context.transitionTo(LevelWonState, {});
         }
     }
 
     public render() {
-        this._context.game.levelManager.currentLevel.render();
+        const renderer = this._context.game.renderer;
+        this.updateSize();
+        renderer.ctx.save();
+        renderer.ctx.translate(...this._translate);
+        renderer.ctx.scale(this._scale, this._scale);
+        this._currentLevel?.render();
+        renderer.ctx.restore();
     }
+
+    private updateSize() {
+        const renderer = this._context.game.renderer;
+        this._scale = this._currentLevel ? Math.min(renderer.width / (renderer.tileSize * this._currentLevel.width), renderer.height / (renderer.tileSize * this._currentLevel.height)) : 1;
+        this._tileSize = renderer.tileSize * this._scale;
+        this._translate = [0, 0];
+        if (renderer.height < renderer.width)
+            this._translate[0] = renderer.width * 0.5 - (this._currentLevel?.width ?? 0) * this._tileSize * 0.5;
+        else
+            this._translate[1] = renderer.height * 0.5 - (this._currentLevel?.height ?? 0) * this._tileSize * 0.5;
+    }
+
+    private _currentLevel?: Level;
+    private _translate: [number, number] = [0, 0];
+    private _scale: number = 1;
+    private _tileSize: number = 1;
 }
 
 export class LevelWonState extends State<{}> {}
