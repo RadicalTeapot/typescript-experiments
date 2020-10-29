@@ -31,9 +31,7 @@ export class Game extends BaseConstructor {
 
     public update() {
         if (this.touchState.isTouching && this._lastTouchCounter === 0) {
-            let [x, y] = this.touchState.lastPosition;
-            const canvasRect = this._renderer.canvas.getBoundingClientRect();
-            this._state.touched(x - canvasRect.left, y - canvasRect.top);
+            this._state.touched(...this.touchState.lastPosition);
             this._lastTouchCounter = 20;
         }
         else if (this._lastTouchCounter > 0) {
