@@ -5,7 +5,8 @@ export class Renderer {
     get ctx() { return this._ctx; }
     /** Size of a tile in pixels*/
     get tileSize() { return 128; };
-    get scale() { return this._scale; }
+    get width() { return this._canvas.width };
+    get height() { return this._canvas.height };
 
     constructor(game: Game, canvas: HTMLCanvasElement) {
         const ctx = canvas.getContext("2d");
@@ -20,19 +21,11 @@ export class Renderer {
     render() {
         this._canvas.width = innerWidth;
         this._canvas.height = innerHeight;
-        this._scale = 1;
-        this.ctx.fillRect(0, 0, innerWidth, innerHeight);
-        // Move below to LoadedLevelState render method
-        if (this._game.levelManager.currentLevel) {
-            this._scale = innerHeight / (this.tileSize * this._game.levelManager.currentLevel.height);
-            this.ctx.translate((innerWidth - this._game.levelManager.currentLevel.width * this.tileSize * this._scale) / 2, 0);
-            this.ctx.scale(this._scale, this._scale);
-        }
+        this.ctx.fillRect(0, 0, this.width, this.height);
         this._game.state.render();
     }
 
     private _game: Game;
     private _canvas: HTMLCanvasElement;
     private _ctx: CanvasRenderingContext2D;
-    private _scale: number = 1;
 }
