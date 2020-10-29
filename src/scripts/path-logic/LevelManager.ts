@@ -13,12 +13,13 @@ export class LevelManager {
         this._levels = maps.map(map => new Level(this._game, map));
     }
 
-    public startLevel(levelIndex: number) {
+    public startLevel(levelIndex: number): Level | undefined {
         if (levelIndex < this._levels.length)
         {
             this._currentLevelIndex = levelIndex;
             this._levels[levelIndex].start();
         }
+        return this._levels[levelIndex];
     }
 
     private _game: Game;
