@@ -44,33 +44,58 @@ abstract class State<T> {
 }
 
 
-interface StartScreenParams {pathToMaps: string[], exitCallback: () => void}
+interface StartScreenParams {pathToMaps: string[], loadingScreenImage: HTMLImageElement}
 export class StartScreenState extends State<StartScreenParams> {
     public enter() {
-        if (this._params.pathToMaps.length > 0) {
-            Loader.loadMaps(this._params.pathToMaps)
-                .then(result => {
-                    this._context.game.levelManager.setMaps(result);
-                    if (result.length > 0)
-                        return Loader.loadTiles(result[0]);
-                    else
-                        return Promise.reject("No maps loaded");
-                })
-                .then(result => {
-                    this._context.game.assets.setItemsToLoad(
-                        ...result.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
-                    );
-                    return this._context.game.assets.load(() => console.log("All assets loaded"));
-                })
-                .then(() => {
-                    this._context.transitionTo(LoadedLevelState, {levelIndex: 0});
-                })
-                .catch(reason => console.log(reason));
-        }
+        this.loadData();
     }
 
-    public exit() {
-        this._params.exitCallback();
+    private loadData() {
+        Loader.loadMaps(this._params.pathToMaps)
+        .then(result => {
+            this._context.game.levelManager.setMaps(result);
+            if (result.length > 0)
+                return Loader.loadTiles(result[0]);
+            else
+                return Promise.reject("No maps loaded");
+        })
+        .then(result => {
+            this._context.game.assets.setItemsToLoad(
+                ['level_select', 'assets/path-logic/level_select.png', AssetType.IMAGE],
+                ...result.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
+            );
+            return this._context.game.assets.load(() => console.log("All assets loaded"));
+        })
+        .then(() => {
+            this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
+        })
+        .catch((reason: Error) => {
+            this._context.transitionTo(ErrorState, {error: reason})
+        });
+    }
+
+    public render() {
+        this._context.game.renderer.ctx.save();
+        this._context.game.renderer.ctx.translate(
+            (innerWidth - this._params.loadingScreenImage.width) / 2,
+            (innerHeight - this._params.loadingScreenImage.height) / 2,
+        );
+        this._context.game.renderer.ctx.drawImage(this._params.loadingScreenImage, 0, 0);
+        this._context.game.renderer.ctx.restore();
+    }
+}
+
+interface ErrorParams {error: Error}
+export class ErrorState extends State<ErrorParams> {
+    public enter() {
+        console.log(`An error occurred\n${this._params.error.message}`);
+    }
+
+    public render() {
+        this._context.game.renderer.ctx.save();
+        this._context.game.renderer.ctx.fillStyle = "red";
+        this._context.game.renderer.ctx.fillText(this._params.error.message, 0, 0);
+        this._context.game.renderer.ctx.restore();
     }
 }
 
