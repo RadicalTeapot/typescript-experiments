@@ -3,8 +3,9 @@ import { GameBaseClass } from "../utils/Constructors";
 import { Tile, TiledJSONParser, TiledMap } from "../utils/TiledJSONParser";
 import { WithFixedStepUpdate } from "../utils/WithFixedStepUpdate";
 import { WithTouchHandler } from "../utils/WithTouchHandler";
-import { GameState, LoadedLevelState, StartScreenState } from "./GameState";
+import { ErrorState, GameState, LoadedLevelState, StartScreenState } from "./GameState";
 import { LevelManager } from "./LevelManager";
+import { Loader } from "./Loader";
 import { Renderer } from "./Renderer";
 
 class BaseClass implements GameBaseClass {
@@ -19,14 +20,13 @@ export class Game extends BaseConstructor {
     get levelManager() { return this._levelManager }
     get state() { return this._state }
 
-    constructor(canvas: HTMLCanvasElement, ...pathToMaps: string[]) {
+    constructor(canvas: HTMLCanvasElement) {
         super();
         this._assetLoader = new AssetLoader();
         this._renderer = new Renderer(this, canvas);
         this._levelManager = new LevelManager(this);
         this._lastTouchCounter = 0;
         this._state = new GameState(this);
-        this._state.transitionTo(StartScreenState, {pathToMaps: pathToMaps, exitCallback: () => super.run()});
     }
 
     public update() {
@@ -41,6 +41,17 @@ export class Game extends BaseConstructor {
         }
     }
 
+    /** Load splash screen and start the game */
+    public run(...pathToMaps: string[]) {
+        Loader.loadImage(this._pathToLoadingScreenImage)
+        .then(result => {
+            super.run();
+            this._state.transitionTo(StartScreenState, {pathToMaps: pathToMaps, loadingScreenImage: result});
+        }).catch((reason: Error) => {
+            this._state.transitionTo(ErrorState, {error: reason});
+        })
+    }
+
     public render() {
         this._renderer.render();
     }
@@ -50,4 +61,5 @@ export class Game extends BaseConstructor {
     private _levelManager: LevelManager;
     private _lastTouchCounter: number;
     private _state: GameState;
+    private readonly _pathToLoadingScreenImage: string = 'assets/path-logic/loading_page.png';
 }
