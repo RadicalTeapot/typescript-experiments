@@ -18,10 +18,16 @@ export class Renderer {
     }
 
     render() {
-        this._scale = innerHeight / (this.tileSize * this._game.levelManager.currentLevel.height);
-        this._canvas.width = this._game.levelManager.currentLevel.width * this.tileSize * this._scale;
-        this._canvas.height = this._game.levelManager.currentLevel.height * this.tileSize * this._scale;
-        this.ctx.scale(this._scale, this._scale);
+        this._canvas.width = innerWidth;
+        this._canvas.height = innerHeight;
+        this._scale = 1;
+        this.ctx.fillRect(0, 0, innerWidth, innerHeight);
+        // Move below to LoadedLevelState render method
+        if (this._game.levelManager.currentLevel) {
+            this._scale = innerHeight / (this.tileSize * this._game.levelManager.currentLevel.height);
+            this.ctx.translate((innerWidth - this._game.levelManager.currentLevel.width * this.tileSize * this._scale) / 2, 0);
+            this.ctx.scale(this._scale, this._scale);
+        }
         this._game.state.render();
     }
 
