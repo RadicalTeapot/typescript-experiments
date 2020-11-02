@@ -15,6 +15,8 @@ export class Renderer {
 
         this._game = game;
         this._canvas = canvas;
+        this._canvas.width = innerWidth;
+        this._canvas.height = innerHeight;
         this._ctx = ctx;
     }
 

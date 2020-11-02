@@ -86,7 +86,7 @@ export class StartScreenState extends State<StartScreenParams> {
     public resize(width: number, height: number) {
         const targetWidth = width * 4/5;
         const ctx = this._context.game.renderer.ctx;
-        ctx.font = `${this._title.fontSize}em pixelSquare`;
+        ctx.font = `1em pixelSquare`;
         let measure = ctx.measureText(this._title.value);
 
         let textWidth = measure.actualBoundingBoxRight - measure.actualBoundingBoxLeft;
@@ -123,8 +123,8 @@ export class StartScreenState extends State<StartScreenParams> {
         renderer.ctx.restore();
     }
 
-    private readonly _title: TextData = {value: "Road builder", fontSize: 1, width: 0, height: 0};
-    private readonly _subtitle: TextData = {value: "Loading...", fontSize: 1, width: 0, height: 0};
+    private readonly _title: TextData = {value: "Road builder", fontSize: 0, width: 0, height: 0};
+    private readonly _subtitle: TextData = {value: "Loading...", fontSize: 0, width: 0, height: 0};
 }
 
 interface ErrorParams {error: Error}
