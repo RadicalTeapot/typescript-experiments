@@ -37,4 +37,15 @@ export class Loader {
         try { return image; }
         catch (error) { throw new Error(error); }
     }
+
+    public static async loadFont(name: string, path: string): Promise<void> {
+        const font = new FontFace(name, `url("${path}")`);
+
+        try {
+            const result = await font.load();
+            document.fonts.add(result);
+            console.log(`Font status ${result.status}, family ${font.family}`);
+        }
+        catch (error) { throw new Error(error); }
+    }
 }

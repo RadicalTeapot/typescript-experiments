@@ -3,7 +3,8 @@
 
 export enum AssetType {
     IMAGE,
-    JSON
+    JSON,
+    FONT,
 }
 export type AssetItem = [string, string, AssetType];
 
@@ -73,9 +74,26 @@ export function loadJSON(path: string): Promise<any> {
     });
 }
 
-type AssetTypes = ImageAsset | JsonAsset;
+class FontAsset extends Asset<string> {
+    constructor(id: string, path: string) {
+        super(id, path, AssetType.FONT, "");
+    }
+    public async load(progressCallback?: (message: string) => void) {
+        const font = new FontFace(this.id, `url(${this.path})`);
+        try {
+            await font.load();
+            this.object = this.id;
+            return this;
+        } catch (error) {
+            throw new Error(error);
+        }
+    }
+}
+
+type AssetTypes = ImageAsset | JsonAsset | FontAsset;
 function assetFactory(id: string, type: AssetType.IMAGE, path: string): ImageAsset;
 function assetFactory(id: string, type: AssetType.JSON, path: string): JsonAsset;
+function assetFactory(id: string, type: AssetType.FONT, path: string): FontAsset;
 function assetFactory(id: string, type: AssetType, path: string): AssetTypes;
 function assetFactory(id: string, type: AssetType, path: string) {
     switch (type) {
@@ -117,7 +135,8 @@ export class AssetLoader {
 
     public get(type: AssetType.IMAGE, id: string): HTMLImageElement;
     public get(type: AssetType.JSON, id: string): any;
-    public get(type: AssetType, id: string): HTMLImageElement | any;
+    public get(type: AssetType.FONT, id: string): string;
+    public get(type: AssetType, id: string): HTMLImageElement | string | any;
     public get(type: AssetType, id: string) {
         if (!(this._assets.has(id) && this._assets.get(id)?.assetType === type))
             throw new Error(`Couldn't find asset with ID ${id} and type ${type}`);
