@@ -1,8 +1,4 @@
-import { GameConstructor } from "./Constructors";
-
-export interface ITouchHandler {
-    touchState: { lastPosition: [number, number], isTouching: boolean }
-}
+import { Constructor } from "./Constructors";
 
 class TouchHandler {
     get lastPosition() { return this._lastPosition };
@@ -62,8 +58,8 @@ class TouchHandler {
     private _isAttached: boolean;
 }
 
-export const WithTouchHandler = <TBase extends GameConstructor>(Base: TBase) => {
-    return class HasTouchHandler extends Base implements ITouchHandler {
+export const WithTouchHandler = <TBase extends Constructor>(Base: TBase) => {
+    abstract class HasTouchHandler extends Base {
         touchState: TouchHandler;
 
         constructor(...args: any[]) {
@@ -72,4 +68,5 @@ export const WithTouchHandler = <TBase extends GameConstructor>(Base: TBase) => 
             this.touchState.attach();
         }
     };
+    return HasTouchHandler;
 };

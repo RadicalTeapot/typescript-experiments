@@ -1,11 +1,7 @@
-import { GameConstructor } from "./Constructors";
+import { Constructor } from "./Constructors";
 
-export interface IFixedStepUpdate {
-    run: () => void
-};
-
-export const WithFixedStepUpdate = <TBase extends GameConstructor>(Base: TBase) => {
-    return class HasFixedStep extends Base implements IFixedStepUpdate {
+export const WithFixedStepUpdate = <TBase extends Constructor>(Base: TBase) => {
+    abstract class HasFixedStep extends Base {
         constructor(...args: any[]) {
             super(...args);
             this._step = 1 / 60;
@@ -13,6 +9,9 @@ export const WithFixedStepUpdate = <TBase extends GameConstructor>(Base: TBase) 
             this._now = 0;
             this.frame = this.frame.bind(this);
         }
+
+        abstract update(): void
+        abstract render(): void
 
         public run() {
             requestAnimationFrame(this.frame);
@@ -39,4 +38,5 @@ export const WithFixedStepUpdate = <TBase extends GameConstructor>(Base: TBase) 
         private _now: number
         private _last?: number;
     }
+    return HasFixedStep;
 }

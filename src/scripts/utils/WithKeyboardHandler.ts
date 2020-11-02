@@ -1,8 +1,4 @@
-import { GameConstructor } from "./Constructors";
-
-export interface IKeyboardHandler {
-    keys: { up: boolean, right: boolean, left: boolean }
-}
+import { Constructor } from "./Constructors";
 
 class KeyboardHandler {
     get up() { return this._up };
@@ -57,8 +53,8 @@ class KeyboardHandler {
     private _isAttached: boolean;
 }
 
-export const WithKeyboardHandler = <TBase extends GameConstructor>(Base: TBase) => {
-    return class HasKeyboardHandler extends Base implements IKeyboardHandler {
+export const WithKeyboardHandler = <TBase extends Constructor>(Base: TBase) => {
+    abstract class HasKeyboardHandler extends Base {
         keys: KeyboardHandler;
 
         constructor(...args: any[]) {
@@ -67,4 +63,5 @@ export const WithKeyboardHandler = <TBase extends GameConstructor>(Base: TBase) 
             this.keys.attach();
         }
     };
+    return HasKeyboardHandler;
 };
