@@ -41,10 +41,10 @@ export class Game extends BaseConstructor {
 
     /** Load splash screen and start the game */
     public run(...pathToMaps: string[]) {
-        Loader.loadImage(this._pathToLoadingScreenImage)
+        Loader.loadFont('pixelSquare', 'assets/path-logic/Kenney Pixel Square.ttf')
         .then(result => {
             super.run();
-            this._state.transitionTo(StartScreenState, {pathToMaps: pathToMaps, loadingScreenImage: result});
+            this._state.transitionTo(StartScreenState, {pathToMaps: pathToMaps});
         }).catch((reason: Error) => {
             this._state.transitionTo(ErrorState, {error: reason});
         })

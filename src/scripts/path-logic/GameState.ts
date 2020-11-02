@@ -45,7 +45,7 @@ abstract class State<T> {
 }
 
 
-interface StartScreenParams {pathToMaps: string[], loadingScreenImage: HTMLImageElement}
+interface StartScreenParams {pathToMaps: string[]}
 export class StartScreenState extends State<StartScreenParams> {
     public enter() {
         this.loadData();
@@ -53,42 +53,45 @@ export class StartScreenState extends State<StartScreenParams> {
 
     private loadData() {
         Loader.loadMaps(this._params.pathToMaps)
-        .then(result => {
-            this._context.game.levelManager.setMaps(result);
-            if (result.length > 0)
-                return Loader.loadTiles(result[0]);
-            else
-                return Promise.reject("No maps loaded");
-        })
-        .then(result => {
-            this._context.game.assets.setItemsToLoad(
-                ['level_select', 'assets/path-logic/level_select.png', AssetType.IMAGE],
-                ...result.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
-            );
-            return this._context.game.assets.load(() => console.log("All assets loaded"));
-        })
-        .then(() => {
-            // Disabled for testing purposes
-            // this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
-        })
-        .catch((reason: Error) => {
-            this._context.transitionTo(ErrorState, {error: reason})
-        });
+            .then(result => {
+                this._context.game.levelManager.setMaps(result);
+                if (result.length > 0)
+                    return Loader.loadTiles(result[0]);
+                else
+                    return Promise.reject("No maps loaded");
+            })
+            .then(result => {
+                this._context.game.assets.setItemsToLoad(
+                    ['level_select', 'assets/path-logic/level_select.png', AssetType.IMAGE],
+                    ...result.map(tile => [tile.id.toString(), tile.image, AssetType.IMAGE] as AssetItem)
+                );
+                return this._context.game.assets.load(() => console.log("All assets loaded"));
+            })
+            .then(() => {
+                // Disabled for testing purposes
+                // this._context.transitionTo(LevelSelectorState, {});
+            })
+            .catch((reason: Error) => {
+                this._context.transitionTo(ErrorState, { error: reason })
+            });
     }
 
     // For testing purposes
     public touched(x: number, y: number) {
-        this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
+        this._context.transitionTo(LevelSelectorState, {});
     }
 
     public render() {
-        this._context.game.renderer.ctx.save();
-        this._context.game.renderer.ctx.translate(
-            (innerWidth - this._params.loadingScreenImage.width) / 2,
-            (innerHeight - this._params.loadingScreenImage.height) / 2,
-        );
-        this._context.game.renderer.ctx.drawImage(this._params.loadingScreenImage, 0, 0);
-        this._context.game.renderer.ctx.restore();
+        const renderer = this._context.game.renderer;
+        renderer.ctx.save();
+        renderer.ctx.fillStyle = "#222034";
+        renderer.ctx.fillRect(0, 0, renderer.width, renderer.height);
+        renderer.ctx.fillStyle = "#FFF";
+        renderer.ctx.font = '160px pixelSquare';
+        renderer.ctx.fillText("Road builder", 100, 300);
+        renderer.ctx.font = '72px pixelSquare';
+        renderer.ctx.fillText("Loading...", 100, 500);
+        renderer.ctx.restore();
     }
 }
 
@@ -106,7 +109,22 @@ export class ErrorState extends State<ErrorParams> {
     }
 }
 
-export class LevelSelectorState extends State<{}> {}
+export class LevelSelectorState extends State<{}> {
+    // For testing purposes
+    public touched(x: number, y: number) {
+        this._context.transitionTo(LoadedLevelState, { levelIndex: 0 });
+    }
+
+    public render() {
+        this._context.game.renderer.ctx.save();
+        this._context.game.renderer.ctx.translate(
+            (innerWidth - this._context.game.assets.get(AssetType.IMAGE, 'level_select').width) / 2,
+            (innerHeight - this._context.game.assets.get(AssetType.IMAGE, 'level_select').height) / 2,
+        );
+        this._context.game.renderer.ctx.drawImage(this._context.game.assets.get(AssetType.IMAGE, 'level_select'), 0, 0);
+        this._context.game.renderer.ctx.restore();
+    }
+}
 
 interface LoadedLevelParams {levelIndex: number}
 export class LoadedLevelState extends State<LoadedLevelParams> {
