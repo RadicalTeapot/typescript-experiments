@@ -17,6 +17,10 @@ export class GameState {
         this._state.enter();
     }
 
+    public resize(width: number, height: number) {
+        this._state?.resize(width, height);
+    }
+
     public render() {
         this._state?.render();
     }
@@ -39,16 +43,18 @@ abstract class State<T> {
     public exit() {};
     public touched(x: number, y: number) {};
     public render() {};
+    public resize(width: number, height: number) {};
 
     protected _params: T;
     protected _context: GameState;
 }
 
-
+interface TextData {value: string, fontSize: number, width: number, height: number}
 interface StartScreenParams {pathToMaps: string[]}
 export class StartScreenState extends State<StartScreenParams> {
     public enter() {
         this.loadData();
+        this.resize(this._context.game.renderer.width, this._context.game.renderer.height);
     }
 
     private loadData() {
@@ -76,6 +82,28 @@ export class StartScreenState extends State<StartScreenParams> {
             });
     }
 
+    // Assumes ctx.textBaseline = 'top' for height to be correct
+    public resize(width: number, height: number) {
+        const targetWidth = width * 4/5;
+        const ctx = this._context.game.renderer.ctx;
+        ctx.font = `${this._title.fontSize}em pixelSquare`;
+        let measure = ctx.measureText(this._title.value);
+
+        let textWidth = measure.actualBoundingBoxRight - measure.actualBoundingBoxLeft;
+        this._title.fontSize = targetWidth / textWidth;
+        this._subtitle.fontSize = this._title.fontSize * 0.5;
+
+        ctx.font = `${this._title.fontSize}em pixelSquare`;
+        measure = ctx.measureText(this._title.value);
+        this._title.width = measure.actualBoundingBoxRight - measure.actualBoundingBoxLeft;
+        this._title.height = measure.actualBoundingBoxDescent;
+
+        ctx.font = `${this._subtitle.fontSize}em pixelSquare`;
+        measure = ctx.measureText(this._subtitle.value);
+        this._subtitle.width = measure.actualBoundingBoxRight - measure.actualBoundingBoxLeft;
+        this._subtitle.height = measure.actualBoundingBoxDescent;
+    }
+
     // For testing purposes
     public touched(x: number, y: number) {
         this._context.transitionTo(LevelSelectorState, {});
@@ -86,13 +114,17 @@ export class StartScreenState extends State<StartScreenParams> {
         renderer.ctx.save();
         renderer.ctx.fillStyle = "#222034";
         renderer.ctx.fillRect(0, 0, renderer.width, renderer.height);
+        renderer.ctx.textBaseline = 'top';
         renderer.ctx.fillStyle = "#FFF";
-        renderer.ctx.font = '160px pixelSquare';
-        renderer.ctx.fillText("Road builder", 100, 300);
-        renderer.ctx.font = '72px pixelSquare';
-        renderer.ctx.fillText("Loading...", 100, 500);
+        renderer.ctx.font = `${this._title.fontSize}em pixelSquare`;
+        renderer.ctx.fillText(this._title.value, renderer.width * 0.1, renderer.height * 0.1);
+        renderer.ctx.font = `${this._subtitle.fontSize}em pixelSquare`;
+        renderer.ctx.fillText(this._subtitle.value, (renderer.width - this._subtitle.width) * 0.5, renderer.height * 0.9 - this._subtitle.height);
         renderer.ctx.restore();
     }
+
+    private readonly _title: TextData = {value: "Road builder", fontSize: 1, width: 0, height: 0};
+    private readonly _subtitle: TextData = {value: "Loading...", fontSize: 1, width: 0, height: 0};
 }
 
 interface ErrorParams {error: Error}

@@ -1,15 +1,11 @@
 import { WithFixedStepUpdate } from "../utils/WithFixedStepUpdate";
 import { WithKeyboardHandler } from "../utils/WithKeyboardHandler";
 import { AssetLoader, AssetItem, AssetType } from "../utils/AssetLoader";
-import { GameBaseClass } from "../utils/Constructors";
 import { Renderer } from "./Renderer";
 import { World } from "./World";
 import { Player } from "./Player";
 
-class Base implements GameBaseClass {
-    update() {}
-    render() {}
-}
+class Base {}
 const BaseConstructor = WithFixedStepUpdate(WithKeyboardHandler(Base));
 
 export class Game extends BaseConstructor {

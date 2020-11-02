@@ -1,19 +1,14 @@
 import { AssetItem, AssetLoader, AssetType } from "../utils/AssetLoader";
-import { GameBaseClass } from "../utils/Constructors";
 import { Tile, TiledJSONParser, TiledMap } from "../utils/TiledJSONParser";
 import { WithFixedStepUpdate } from "../utils/WithFixedStepUpdate";
+import { WithResizeHandler } from "../utils/WithResizeHandler";
 import { WithTouchHandler } from "../utils/WithTouchHandler";
 import { ErrorState, GameState, LoadedLevelState, StartScreenState } from "./GameState";
 import { LevelManager } from "./LevelManager";
 import { Loader } from "./Loader";
 import { Renderer } from "./Renderer";
 
-class BaseClass implements GameBaseClass {
-   update() {}
-   render() {}
-}
-
-const BaseConstructor = WithTouchHandler(WithFixedStepUpdate(BaseClass));
+const BaseConstructor = WithResizeHandler(WithTouchHandler(WithFixedStepUpdate(class {})));
 export class Game extends BaseConstructor {
     get renderer() { return this._renderer }
     get assets() { return this._assetLoader }
@@ -27,6 +22,10 @@ export class Game extends BaseConstructor {
         this._levelManager = new LevelManager(this);
         this._lastTouchCounter = 0;
         this._state = new GameState(this);
+    }
+
+    public handleResize(width: number, height: number) {
+        this._state.resize(width, height);
     }
 
     public update() {
