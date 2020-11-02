@@ -117,9 +117,10 @@ export class StartScreenState extends State<StartScreenParams> {
         renderer.ctx.textBaseline = 'top';
         renderer.ctx.fillStyle = "#FFF";
         renderer.ctx.font = `${this._title.fontSize}em pixelSquare`;
-        renderer.ctx.fillText(this._title.value, renderer.width * 0.1, renderer.height * 0.1);
+        renderer.ctx.fillText(this._title.value, renderer.width * 0.1, renderer.height * 0.2);
+        renderer.ctx.textBaseline = 'bottom';
         renderer.ctx.font = `${this._subtitle.fontSize}em pixelSquare`;
-        renderer.ctx.fillText(this._subtitle.value, (renderer.width - this._subtitle.width) * 0.5, renderer.height * 0.9 - this._subtitle.height);
+        renderer.ctx.fillText(this._subtitle.value, (renderer.width - this._subtitle.width) * 0.5, renderer.height * 0.8);
         renderer.ctx.restore();
     }
 
