@@ -82,7 +82,7 @@ export class StartScreenState extends State<StartScreenParams> {
             });
     }
 
-    // Assumes ctx.textBaseline = 'top' for height to be correct
+    // Assumes ctx.textBaseline = 'top' or 'bottom' for height to be correct
     public resize(width: number, height: number) {
         const targetWidth = width * 4/5;
         const ctx = this._context.game.renderer.ctx;
@@ -136,8 +136,15 @@ export class ErrorState extends State<ErrorParams> {
 
     public render() {
         this._context.game.renderer.ctx.save();
-        this._context.game.renderer.ctx.fillStyle = "red";
-        this._context.game.renderer.ctx.fillText(this._params.error.message, 0, 0);
+        this._context.game.renderer.ctx.fillStyle = "#222034";
+        this._context.game.renderer.ctx.fillRect(0, 0, this._context.game.renderer.width, this._context.game.renderer.height);
+        this._context.game.renderer.ctx.fillStyle = "#F44";
+        this._context.game.renderer.ctx.font = "32px sans";
+        this._context.game.renderer.ctx.textBaseline = "top";
+        this._context.game.renderer.ctx.fillText("An error has occurred", 10, 0);
+        this._context.game.renderer.ctx.font = "16px sans";
+        this._context.game.renderer.ctx.fillStyle = "white";
+        this._context.game.renderer.ctx.fillText(this._params.error.message, 10, 52, this._context.game.renderer.width - 20);
         this._context.game.renderer.ctx.restore();
     }
 }
