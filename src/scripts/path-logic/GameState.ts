@@ -172,6 +172,7 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
         this._currentLevel = this._context.game.levelManager.startLevel(this._params.levelIndex);
         if (!this._currentLevel)
             this._context.transitionTo(ErrorState, {error: new Error(`Could not load level ${this._params.levelIndex}`)});
+        this.resize(this._context.game.renderer.width, this._context.game.renderer.height);
     }
 
     public touched(x: number, y: number) {
@@ -185,7 +186,6 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
 
     public render() {
         const renderer = this._context.game.renderer;
-        this.updateSize();
         renderer.ctx.save();
         renderer.ctx.translate(...this._translate);
         renderer.ctx.scale(this._scale, this._scale);
@@ -193,15 +193,15 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
         renderer.ctx.restore();
     }
 
-    private updateSize() {
+    public resize(width: number, height: number) {
         const renderer = this._context.game.renderer;
-        this._scale = this._currentLevel ? Math.min(renderer.width / (renderer.tileSize * this._currentLevel.width), renderer.height / (renderer.tileSize * this._currentLevel.height)) : 1;
+        this._scale = this._currentLevel ? Math.min(width / (renderer.tileSize * this._currentLevel.width), height / (renderer.tileSize * this._currentLevel.height)) : 1;
         this._tileSize = renderer.tileSize * this._scale;
         this._translate = [0, 0];
-        if (renderer.height < renderer.width)
-            this._translate[0] = renderer.width * 0.5 - (this._currentLevel?.width ?? 0) * this._tileSize * 0.5;
+        if (height < width)
+            this._translate[0] = width * 0.5 - (this._currentLevel?.width ?? 0) * this._tileSize * 0.5;
         else
-            this._translate[1] = renderer.height * 0.5 - (this._currentLevel?.height ?? 0) * this._tileSize * 0.5;
+            this._translate[1] = height * 0.5 - (this._currentLevel?.height ?? 0) * this._tileSize * 0.5;
     }
 
     private _currentLevel?: Level;
