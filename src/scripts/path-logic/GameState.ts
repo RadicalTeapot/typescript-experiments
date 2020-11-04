@@ -210,4 +210,20 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
     private _tileSize: number = 1;
 }
 
-export class LevelWonState extends State<{}> {}
+export class LevelWonState extends State<{}> {
+    public render() {
+        const renderer = this._context.game.renderer;
+        renderer.ctx.save();
+        this._context.game.renderer.ctx.fillStyle = "#222034";
+        this._context.game.renderer.ctx.fillRect(0, 0, this._context.game.renderer.width, this._context.game.renderer.height);
+        this._context.game.renderer.ctx.font = "2em pixelSquare";
+        this._context.game.renderer.ctx.textBaseline = "top";
+        this._context.game.renderer.ctx.fillStyle = "white";
+        this._context.game.renderer.ctx.fillText("You won", 10, 52, this._context.game.renderer.width - 20);
+        renderer.ctx.restore();
+    }
+
+    public touched(x: number, y: number) {
+        this._context.transitionTo(LevelSelectorState, {});
+    }
+}
