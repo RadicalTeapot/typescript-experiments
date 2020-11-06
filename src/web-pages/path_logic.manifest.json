@@ -1,0 +1,14 @@
+{
+  "short_name": "Path logic",
+  "name": "path_logic",
+  "icons": [
+    {
+      "src": "assets/path-logic/app-icon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/path_logic.html",
+  "display": "fullscreen",
+  "orientation": "landscape"
+}
