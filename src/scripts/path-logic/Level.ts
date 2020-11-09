@@ -96,17 +96,26 @@ class LevelLayer {
         this._game = game;
     }
 
-    public render() {
+    public render(t: number) {
         if (this._isRenderable) {
             this._game.renderer.ctx.globalAlpha = this.opacity;
-            this._tiles.filter(tile => tile.valid).forEach(tile =>
+            this._tiles.filter(tile => tile.valid).forEach((tile, index) => {
+                this._game.renderer.ctx.save();
+                if (this._isInteractive) {
+                    let s = Math.sin(t * 0.007 + index) * 0.02 + 1;
+                    this._game.renderer.ctx.translate((tile.x + 0.5) * this._game.renderer.tileSize, (tile.y + 0.5) * this._game.renderer.tileSize);
+                    this._game.renderer.ctx.scale(s, s);
+                    this._game.renderer.ctx.translate(-0.5 * this._game.renderer.tileSize, -0.5 * this._game.renderer.tileSize);
+                }
+                else {
+                    this._game.renderer.ctx.translate(tile.x * this._game.renderer.tileSize, tile.y * this._game.renderer.tileSize);
+                }
                 this._game.renderer.ctx.drawImage(
                     this._game.assets.get(AssetType.IMAGE, tile.tileID),
-                    tile.x * this._game.renderer.tileSize,
-                    tile.y * this._game.renderer.tileSize,
-                    this._game.renderer.tileSize, this._game.renderer.tileSize
-                )
-            );
+                    0, 0, this._game.renderer.tileSize, this._game.renderer.tileSize
+                );
+                this._game.renderer.ctx.restore();
+            });
         }
     }
 
