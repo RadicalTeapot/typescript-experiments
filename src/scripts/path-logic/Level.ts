@@ -16,6 +16,72 @@ class LevelTile {
     }
 }
 
+class LevelObject extends LevelTile {
+    rotation: number;
+    width: number;
+    height: number;
+
+    constructor(x: number, y: number, rotation: number, width: number, height: number, tileID: string, valid: boolean) {
+        super(x, y, tileID, valid);
+        this.rotation = rotation;
+        this.width = width;
+        this.height = height;
+    }
+}
+
+class ObjectLayer {
+    get isRenderable() { return this._isRenderable };
+
+    private constructor(game: Game) {
+        this._game = game;
+    }
+
+    static FromTiledLayer(tiledLayer: TiledLayer, game: Game) {
+        let self = new ObjectLayer(game);
+        self._objects = [];
+        self._isRenderable = ObjectLayer.IsLayerRenderable(tiledLayer);
+        let tileID = '';
+        tiledLayer.objects?.filter(tiledObject => tiledObject.gid !== undefined).forEach(tiledObject => {
+            tileID = tiledObject.gid.toString();
+            self._objects.push(
+                new LevelObject(
+                    tiledObject.x, tiledObject.y,
+                    tiledObject.rotation * Math.PI / 180,
+                    tiledObject.width, tiledObject.height, tileID,
+                    ObjectLayer.IsTileValid(tileID, game)
+                )
+            );
+        });
+        return self;
+    }
+
+    private static IsLayerRenderable(layer: TiledLayer): boolean {
+        let renderable = false;
+        if (layer.properties && layer.properties.length > 0)
+            renderable = layer.properties.some(property => property.name === "renderable" && property.type === "bool" && property.value === true);
+        return renderable;
+    }
+
+    public render() {
+        const ctx = this._game.renderer.ctx;
+        this._objects.filter(obj => obj.valid).forEach(obj => {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+            ctx.rotate(obj.rotation);
+            ctx.drawImage(this._game.assets.get(AssetType.IMAGE, obj.tileID), 0, -obj.height);
+            ctx.restore();
+        });
+    }
+
+    private static IsTileValid(tileID: string, game: Game) {
+        return game.assets.has(AssetType.IMAGE, tileID);
+    }
+
+    private _objects: LevelObject[] = [];
+    private _isRenderable: boolean = false;
+    private _game: Game;
+}
+
 class LevelLayer {
     opacity: number
     visible: boolean
@@ -145,7 +211,8 @@ export class Level {
 
     public render() {
         this._layers.forEach(layer => layer.render());
-        this.renderGrid();
+        //this.renderGrid();
+        this._objectLayers.forEach(layer => layer.render());
     }
 
     public getInteractiveTile(x: number, y: number) {
@@ -162,21 +229,22 @@ export class Level {
     private loadMap() {
         this._width = this._map.width;
         this._height = this._map.height;
-        this._layers = this.extractTileLayers(this._map).map(layer => LevelLayer.FromTiledLayer(layer, this._width, this._game));
+        this.extractTileLayers();
         this._interactiveLayerIndex = this._layers.findIndex(layer => layer.isInteractive);
     }
 
     /** Use depth first search so returned layers should ordered properly */
-    private extractTileLayers(map: TiledMap): TiledLayer[] {
-        let layers: TiledLayer[] = [];
+    private extractTileLayers() {
+        this._layers = [];
         const getTileLayers = (layer: TiledLayer) => {
             if (layer.type === 'tilelayer')
-                layers.push(layer);
+                this._layers.push(LevelLayer.FromTiledLayer(layer, this._map.width, this._game));
             else if (layer.type === 'group')
                 layer.layers?.forEach(child => getTileLayers(child));
+            else if (layer.type === 'objectgroup' && layer.objects && layer.objects.length > 0)
+                this._objectLayers.push(ObjectLayer.FromTiledLayer(layer, this._game));
         };
-        map.layers.forEach(child => getTileLayers(child));
-        return layers;
+        this._map.layers.forEach(child => getTileLayers(child));
     }
 
     public setHintLayersOpacity(opacity: number) {
@@ -199,6 +267,7 @@ export class Level {
     }
 
     private _layers: LevelLayer[] = [];
+    private _objectLayers: ObjectLayer[] = [];
     private _originalInteractiveLayer?: LevelLayer;
     private _interactiveLayerIndex: number = -1;
     private _width: number = 0;

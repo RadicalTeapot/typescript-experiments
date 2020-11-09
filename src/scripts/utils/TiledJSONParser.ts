@@ -28,7 +28,7 @@ export interface TiledLayerProperty {
     value: boolean | string | number
 }
 
-interface TiledObject {
+export interface TiledObject {
     gid: number,
     width: number,
     height: number,
