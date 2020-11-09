@@ -11,7 +11,7 @@ export const WithFixedStepUpdate = <TBase extends Constructor>(Base: TBase) => {
         }
 
         abstract update(): void
-        abstract render(): void
+        abstract render(t: number): void
 
         public run() {
             requestAnimationFrame(this.frame);
@@ -28,7 +28,7 @@ export const WithFixedStepUpdate = <TBase extends Constructor>(Base: TBase) => {
                 this._gdt -= dt;
             }
             // Render frame
-            this.render();
+            this.render(t);
             this._last = this._now;
             requestAnimationFrame(this.frame);
         }

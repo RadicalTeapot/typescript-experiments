@@ -20,11 +20,11 @@ export class Renderer {
         this._ctx = ctx;
     }
 
-    render() {
+    render(t: number) {
         this._canvas.width = innerWidth;
         this._canvas.height = innerHeight;
         this.ctx.fillRect(0, 0, this.width, this.height);
-        this._game.state.render();
+        this._game.state.render(t);
     }
 
     private _game: Game;

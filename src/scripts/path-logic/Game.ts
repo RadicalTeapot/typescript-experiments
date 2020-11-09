@@ -49,8 +49,8 @@ export class Game extends BaseConstructor {
         })
     }
 
-    public render() {
-        this._renderer.render();
+    public render(t: number) {
+        this._renderer.render(t);
     }
 
     private _assetLoader: AssetLoader;

@@ -21,8 +21,8 @@ export class GameState {
         this._state?.resize(width, height);
     }
 
-    public render() {
-        this._state?.render();
+    public render(t: number) {
+        this._state?.render(t);
     }
 
     public touched(x: number, y: number) {
@@ -42,7 +42,7 @@ abstract class State<T> {
     public enter() {};
     public exit() {};
     public touched(x: number, y: number) {};
-    public render() {};
+    public render(t: number) {};
     public resize(width: number, height: number) {};
 
     protected _params: T;
@@ -184,7 +184,7 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
         }
     }
 
-    public render() {
+    public render(t: number) {
         const renderer = this._context.game.renderer;
         renderer.ctx.save();
         renderer.ctx.translate(...this._translate);
@@ -194,7 +194,7 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
             renderer.ctx.rect(0, 0, this._currentLevel.width * renderer.tileSize, this._currentLevel.height * renderer.tileSize);
             renderer.ctx.clip();
         }
-        this._currentLevel?.render();
+        this._currentLevel?.render(t);
         renderer.ctx.restore();
     }
 

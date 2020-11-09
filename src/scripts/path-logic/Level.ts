@@ -209,8 +209,8 @@ export class Level {
         }
     }
 
-    public render() {
-        this._layers.forEach(layer => layer.render());
+    public render(t: number) {
+        this._layers.forEach(layer => layer.render(t));
         //this.renderGrid();
         this._objectLayers.forEach(layer => layer.render());
     }
