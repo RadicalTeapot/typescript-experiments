@@ -189,6 +189,11 @@ export class LoadedLevelState extends State<LoadedLevelParams> {
         renderer.ctx.save();
         renderer.ctx.translate(...this._translate);
         renderer.ctx.scale(this._scale, this._scale);
+        // Clip all future rendered items to canvas
+        if (this._currentLevel) {
+            renderer.ctx.rect(0, 0, this._currentLevel.width * renderer.tileSize, this._currentLevel.height * renderer.tileSize);
+            renderer.ctx.clip();
+        }
         this._currentLevel?.render();
         renderer.ctx.restore();
     }
